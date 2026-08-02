@@ -1,0 +1,1003 @@
+<title>Lakebridge Session Report — 27 July 2026</title>
+
+<style>
+  :root{
+    --ink:#12171F; --ink-2:#1C2430; --paper:#FBFAF7; --paper-2:#F2EFE9;
+    --copper:#B5622C; --copper-soft:#E4C4A8;
+    --slate:#5A6472; --slate-2:#8A93A0; --rule:#DFDAD1;
+    --ok:#2E6F4E; --warn:#A6761D; --crit:#A33B32; --info:#3B6083;
+    --bg:var(--paper); --bg-2:var(--paper-2); --fg:var(--ink); --fg-2:var(--slate);
+    --accent:var(--copper); --line:var(--rule); --code-bg:#F4F1EA; --card:#FFFFFF;
+    --serif:Iowan Old Style,Palatino Linotype,Palatino,Georgia,serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0E1218; --bg-2:#151C25; --fg:#E9E6E0; --fg-2:#9AA3B0;
+      --accent:#D98A4E; --line:#28313D; --code-bg:#131A23; --card:#141B24;
+      --ok:#5FA97F; --warn:#D0A44E; --crit:#D2685E; --info:#6C9AC4;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1218; --bg-2:#151C25; --fg:#E9E6E0; --fg-2:#9AA3B0;
+    --accent:#D98A4E; --line:#28313D; --code-bg:#131A23; --card:#141B24;
+    --ok:#5FA97F; --warn:#D0A44E; --crit:#D2685E; --info:#6C9AC4;
+  }
+  :root[data-theme="light"]{
+    --bg:#FBFAF7; --bg-2:#F2EFE9; --fg:#12171F; --fg-2:#5A6472;
+    --accent:#B5622C; --line:#DFDAD1; --code-bg:#F4F1EA; --card:#FFFFFF;
+    --ok:#2E6F4E; --warn:#A6761D; --crit:#A33B32; --info:#3B6083;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+       font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+
+  /* ---------- masthead ---------- */
+  header.mast{border-bottom:1px solid var(--line);background:var(--bg-2)}
+  .mast-in{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;
+           justify-content:space-between;padding:44px 0 30px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+           text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(30px,4.4vw,48px);
+     line-height:1.08;margin:0;text-wrap:balance;letter-spacing:-.01em}
+  .sub{color:var(--fg-2);margin:12px 0 0;max-width:56ch;font-size:15px}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+         gap:22px;font-family:var(--mono);font-size:12px}
+  .facts dt{color:var(--fg-2);font-size:10px;letter-spacing:.12em;
+            text-transform:uppercase;margin:0 0 5px}
+  .facts dd{margin:0;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+  .facts dd.ok{color:var(--ok)} .facts dd.crit{color:var(--crit)}
+
+  /* ---------- audience tabs ---------- */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);
+        position:sticky;top:0;background:var(--bg);z-index:20;padding-top:2px}
+  .tab{appearance:none;border:0;background:none;cursor:pointer;color:var(--fg-2);
+       font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+       text-transform:uppercase;padding:15px 18px;border-bottom:2px solid transparent}
+  .tab:hover{color:var(--fg)}
+  .tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+
+  /* ---------- layout ---------- */
+  .cols{display:grid;grid-template-columns:250px 1fr;gap:48px;
+        align-items:start;padding:40px 0 96px}
+  @media (max-width:940px){.cols{grid-template-columns:1fr;gap:28px}}
+
+  aside{position:sticky;top:60px}
+  @media (max-width:940px){aside{position:static}}
+  .rail-h{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+          text-transform:uppercase;color:var(--fg-2);margin:0 0 12px}
+  .filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .chip{appearance:none;cursor:pointer;font-family:var(--mono);font-size:10.5px;
+        letter-spacing:.06em;padding:5px 10px;border-radius:2px;
+        border:1px solid var(--line);background:transparent;color:var(--fg-2)}
+  .chip:hover{border-color:var(--accent);color:var(--fg)}
+  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  :root[data-theme="dark"] .chip[aria-pressed="true"]{color:#0E1218}
+  @media (prefers-color-scheme:dark){.chip[aria-pressed="true"]{color:#0E1218}}
+  .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  ol.timeline{list-style:none;margin:0;padding:0;max-height:56vh;overflow-y:auto;
+              border-left:1px solid var(--line)}
+  @media (max-width:940px){ol.timeline{max-height:none}}
+  ol.timeline li{position:relative;padding:6px 0 6px 16px;font-size:12.5px;
+                 font-family:var(--mono);line-height:1.4;color:var(--fg-2)}
+  ol.timeline li::before{content:"";position:absolute;left:-4px;top:12px;
+                         width:7px;height:7px;border-radius:50%;background:var(--slate-2)}
+  li.PASS::before{background:var(--ok)} li.FAIL::before{background:var(--crit)}
+  li.PARTIAL::before,li.BLOCKED::before,li.GATED::before{background:var(--warn)}
+  ol.timeline li b{color:var(--fg);font-weight:600;display:block}
+  ol.timeline li[hidden]{display:none}
+
+  /* ---------- content ---------- */
+  main{min-width:0}
+  section.pane[hidden]{display:none}
+  h2{font-family:var(--serif);font-size:clamp(21px,2.6vw,29px);font-weight:600;
+     margin:52px 0 4px;line-height:1.2;text-wrap:balance;letter-spacing:-.005em}
+  h2:first-child{margin-top:0}
+  h2 .num{font-family:var(--mono);font-size:11px;color:var(--accent);
+          display:block;letter-spacing:.14em;margin-bottom:7px;font-weight:400}
+  h3{font-family:var(--sans);font-size:16px;font-weight:650;margin:30px 0 8px}
+  p{margin:0 0 14px;max-width:68ch}
+  a{color:var(--accent)}
+
+  details{border:1px solid var(--line);border-radius:3px;background:var(--card);
+          margin:14px 0;overflow:hidden}
+  summary{cursor:pointer;padding:13px 16px;font-weight:600;font-size:14.5px;
+          list-style:none;display:flex;justify-content:space-between;gap:14px;
+          align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";font-family:var(--mono);color:var(--accent);font-size:16px}
+  details[open] summary::after{content:"–"}
+  summary:hover{background:var(--bg-2)}
+  summary:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+  .det-body{padding:2px 16px 16px;border-top:1px solid var(--line)}
+
+  /* code */
+  .code{position:relative;margin:12px 0}
+  .code-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+            text-transform:uppercase;color:var(--fg-2);margin-bottom:5px;
+            display:flex;justify-content:space-between;align-items:center;gap:10px}
+  pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:3px;
+      padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+      line-height:1.62}
+  pre.out{background:transparent;border-style:dashed;color:var(--fg-2)}
+  code{font-family:var(--mono);font-size:.9em;background:var(--code-bg);
+       padding:1px 5px;border-radius:2px}
+  pre code{background:none;padding:0;font-size:inherit}
+  .copy{appearance:none;cursor:pointer;font-family:var(--mono);font-size:10px;
+        letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:2px;
+        border:1px solid var(--line);background:var(--bg);color:var(--fg-2)}
+  .copy:hover{border-color:var(--accent);color:var(--accent)}
+  .copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:3px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:420px}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);
+        vertical-align:top}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+     color:var(--fg-2);background:var(--bg-2);font-weight:500}
+  tr:last-child td{border-bottom:0}
+  td.num{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+
+  .sev{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+       padding:2px 7px;border-radius:2px;text-transform:uppercase;white-space:nowrap;
+       border:1px solid currentColor}
+  .sev.crit{color:var(--crit)} .sev.warn{color:var(--warn)}
+  .sev.ok{color:var(--ok)} .sev.info{color:var(--info)}
+
+  .callout{border-left:3px solid var(--accent);background:var(--bg-2);
+           padding:13px 16px;margin:16px 0;border-radius:0 3px 3px 0;font-size:14.5px}
+  .callout.bad{border-left-color:var(--crit)}
+  .callout.good{border-left-color:var(--ok)}
+  .callout p:last-child{margin-bottom:0}
+  .callout strong{color:var(--fg)}
+
+  .lede{font-family:var(--serif);font-size:19px;line-height:1.5;color:var(--fg);
+        max-width:60ch;margin:0 0 22px}
+
+  .glossary{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
+            border-radius:3px;overflow:hidden}
+  .glossary div{background:var(--card);padding:12px 15px}
+  .glossary dt{font-weight:650;font-size:14.5px;margin:0 0 3px}
+  .glossary dd{margin:0;color:var(--fg-2);font-size:14px}
+
+  footer{border-top:1px solid var(--line);padding:26px 0 44px;color:var(--fg-2);
+         font-size:12.5px;font-family:var(--mono)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="mast">
+  <div class="wrap mast-in">
+    <div>
+      <p class="eyebrow">Session Report &middot; 27 July 2026</p>
+      <h1>Databricks Lakebridge:<br>install, test, and break on purpose</h1>
+      <p class="sub">Standing up a SQL migration toolkit on an Apple Silicon Mac,
+        validating it end to end, and finding two genuine defects along the way.</p>
+    </div>
+    <dl class="facts">
+      <div><dt>Steps</dt><dd>32</dd></div>
+      <div><dt>Findings</dt><dd>9</dd></div>
+      <div><dt>Upstream bugs</dt><dd class="crit">2</dd></div>
+      <div><dt>Faults caught</dt><dd class="ok">4/4</dd></div>
+    </dl>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-pane="tech">Technical</button>
+    <button class="tab" role="tab" aria-selected="false" data-pane="simple">Plain English</button>
+    <button class="tab" role="tab" aria-selected="false" data-pane="find">Findings</button>
+    <button class="tab" role="tab" aria-selected="false" data-pane="ref">Commands</button>
+  </div>
+
+  <div class="cols">
+    <aside>
+      <p class="rail-h">Timeline · <span id="count">32</span> steps</p>
+      <div class="filters">
+        <button class="chip" aria-pressed="true"  data-f="ALL">All</button>
+        <button class="chip" aria-pressed="false" data-f="PASS">Pass</button>
+        <button class="chip" aria-pressed="false" data-f="FAIL">Fail</button>
+        <button class="chip" aria-pressed="false" data-f="OTHER">Partial</button>
+      </div>
+      <ol class="timeline" id="tl"></ol>
+    </aside>
+
+    <main>
+
+    <!-- ===================== TECHNICAL ===================== -->
+    <section class="pane" id="tech">
+      <h2><span class="num">01 — Context</span>What Lakebridge is</h2>
+      <p>A Databricks Labs toolkit for migrating SQL/ETL workloads. It ships as a
+        <strong>Databricks CLI extension</strong>, not a standalone binary.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Component</th><th>Job</th><th>Runs where</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Profiler</strong></td><td>Surveys source estate, sizing, TCO</td><td>Local</td></tr>
+          <tr><td><strong>Analyzer</strong></td><td>Scores complexity, flags blockers</td><td>Local (x86 binary)</td></tr>
+          <tr><td><strong>Transpiler</strong></td><td>Source SQL → Databricks SQL</td><td>Local (JVM)</td></tr>
+          <tr><td><strong>Reconciler</strong></td><td>Verifies data matches after migration</td><td>Databricks job</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2><span class="num">02 — Audit</span>Environment before starting</h2>
+      <div class="code">
+        <div class="code-lbl"><span>bash — audit</span><button class="copy">Copy</button></div>
+<pre><code>python3 --version; uv --version; java -version
+databricks --version; sw_vers; uname -m</code></pre>
+      </div>
+      <div class="code">
+        <div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>Python 3.9.6                    # too old — needs >= 3.10.1
+uv 0.11.29
+The operation couldn't be completed. Unable to locate a Java Runtime.
+(eval):1: command not found: databricks
+ProductVersion: 26.3.2
+arm64</code></pre>
+      </div>
+      <div class="callout bad"><p><strong>Three blockers:</strong> Python too old (3.9.6 vs 3.10.1 floor),
+        Java 21 absent, Databricks CLI absent. Cluster list later came back <em>empty</em> —
+        a serverless-only workspace, which causes Finding 8.</p></div>
+
+      <h2><span class="num">03 — Install</span>Prerequisites</h2>
+      <details open><summary>Databricks CLI — blocked by an untrusted tap</summary>
+        <div class="det-body">
+          <div class="code"><div class="code-lbl"><span>error</span></div>
+<pre class="out"><code>Error: Refusing to load formula databricks/tap/databricks from
+untrusted tap databricks/tap.</code></pre></div>
+          <p>Homebrew now requires explicit trust for third-party taps.
+             <code>databricks/tap</code> is Databricks' own published tap.</p>
+          <div class="code"><div class="code-lbl"><span>bash — fix</span><button class="copy">Copy</button></div>
+<pre><code>brew trust databricks/tap
+brew install databricks</code></pre></div>
+          <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>Databricks CLI v1.9.0
+/opt/homebrew/bin/databricks</code></pre></div>
+        </div>
+      </details>
+
+      <details><summary>Java 21 — the cask needs a password, the formula doesn't</summary>
+        <div class="det-body">
+          <div class="code"><div class="code-lbl"><span>error — brew install --cask temurin@21</span></div>
+<pre class="out"><code>sudo: a terminal is required to read the password
+sudo: a password is required
+Error: Failure while executing; `/usr/bin/sudo ... /usr/sbin/installer
+-pkg .../OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.11_10.pkg` exited with 1.</code></pre></div>
+          <p>The <em>cask</em> installs system-wide and needs root. The <em>formula</em>
+             installs into the Homebrew Cellar and does not.</p>
+          <div class="code"><div class="code-lbl"><span>bash — fix</span><button class="copy">Copy</button></div>
+<pre><code>brew install openjdk@21
+export JAVA_HOME="/opt/homebrew/opt/openjdk@21"
+export PATH="$JAVA_HOME/bin:$PATH"
+java -version</code></pre></div>
+          <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>openjdk version "21.0.12" 2026-07-21
+OpenJDK 64-Bit Server VM Homebrew (build 21.0.12, mixed mode, sharing)</code></pre></div>
+          <p><code>openjdk@21</code> is keg-only — not auto-linked — so
+             <code>JAVA_HOME</code> and <code>PATH</code> must be set manually.</p>
+        </div>
+      </details>
+
+      <h2><span class="num">04 — Auth</span>Connecting the CLI</h2>
+      <p>OAuth over PAT: no token is ever typed, stored in plain text, or visible.</p>
+      <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
+<pre><code>databricks auth login \
+  --host https://<old-workspace>.cloud.databricks.com \
+  --profile lakebridge-eval
+
+databricks current-user me -p lakebridge-eval</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>Profile lakebridge-eval was successfully saved
+{
+  "active": true,
+  "emails": [{ "value": "you@example.com" }],
+  "entitlements": [{ "value": "allow-cluster-create" }]
+}</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>output — workspace inventory</span></div>
+<pre class="out"><code>=== WAREHOUSES ===
+ID                Name                          Size      State
+<old-warehouse-id>  Serverless Starter Warehouse  2X-Small  STOPPED
+
+=== CLUSTERS ===
+ID  Name  State
+                        &lt;-- empty. serverless-only workspace.</code></pre></div>
+
+      <h2><span class="num">05 — Install</span>Lakebridge itself</h2>
+      <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
+<pre><code># default python3 is 3.9.6 — force a supported interpreter first
+export PATH="$(dirname $(uv python find 3.12)):$PATH"
+databricks labs install lakebridge -p lakebridge-eval</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>19:35:04 INFO [d.l.lakebridge.install] Successfully Setup Lakebridge
+         Components Locally
+
+$ cat ~/.databricks/labs/lakebridge/state/version.json
+{"version":"v0.14.2","date":"2026-07-27T19:34:49.657807+05:30"}
+$ ~/.databricks/labs/lakebridge/state/venv/bin/python --version
+Python 3.12.13</code></pre></div>
+
+      <details><summary>install-transpile — the wizard, and why each answer matters</summary>
+        <div class="det-body">
+          <div class="tbl"><table>
+            <thead><tr><th>Prompt</th><th>Answer</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td>Source dialect</td><td><code>8</code> snowflake</td><td>Matches the sample corpus</td></tr>
+              <tr><td>Input SQL path</td><td><code>samples/snowflake</code></td><td>—</td></tr>
+              <tr><td>Output directory</td><td><code>out/transpiled</code></td><td>—</td></tr>
+              <tr><td>Error file</td><td><code>out/errors.log</code></td><td>—</td></tr>
+              <tr><td>Validate syntax/semantics?</td><td><strong>no</strong></td>
+                  <td>Validation needs a <em>running</em> warehouse. Ours was stopped —
+                      answering yes risks a hang or failure</td></tr>
+            </tbody>
+          </table></div>
+          <div class="code"><div class="code-lbl"><span>output — describe-transpile</span></div>
+<pre class="out"><code>Transpiler   Installed Version
+==========   =================
+Bladebridge  0.3.0
+Morpheus     0.9.0
+
+Supported Source Dialects: datastage, informatica (desktop edition),
+informatica cloud, mssql, netezza, oracle, redshift, snowflake, ssis,
+synapse, teradata</code></pre></div>
+          <p>Selecting snowflake routed to <strong>Morpheus</strong> — which is why
+             Java 21 was a hard requirement.</p>
+        </div>
+      </details>
+
+      <h2><span class="num">06 — Blocker</span>The Analyzer would not start</h2>
+      <div class="code"><div class="code-lbl"><span>error</span></div>
+<pre class="out"><code>OSError: [Errno 86] Bad CPU type in executable:
+'.../databricks/labs/bladespector/Analyzer/MacOS/analyzer'</code></pre></div>
+      <p>Diagnosed with evidence rather than guesswork:</p>
+      <div class="code"><div class="code-lbl"><span>bash — diagnosis</span><button class="copy">Copy</button></div>
+<pre><code>file "$B"                                  # what kind of program is it?
+uname -m                                   # what chip is this Mac?
+/usr/bin/pgrep -q oahd &amp;&amp; echo yes || echo no   # is Rosetta 2 running?</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>.../analyzer: Mach-O 64-bit executable x86_64   &lt;-- Intel only
+arm64                                           &lt;-- Apple Silicon host
+no                                              &lt;-- Rosetta 2 absent</code></pre></div>
+      <div class="callout bad"><p><strong>Root cause:</strong> Lakebridge ships the Analyzer as a
+        non-universal <strong>x86_64-only</strong> binary. On Apple Silicon without Rosetta 2 the
+        kernel refuses to execute it. This is an upstream packaging gap, not a
+        misconfiguration.</p></div>
+      <div class="code"><div class="code-lbl"><span>bash — fix (needs your password)</span><button class="copy">Copy</button></div>
+<pre><code>softwareupdate --install-rosetta --agree-to-license</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>Package Authoring Error: 122-10397: Package reference
+com.apple.pkg.RosettaUpdateAuto is missing installKBytes attribute
+Install of Rosetta 2 finished successfully</code></pre></div>
+      <div class="callout"><p>The <strong>Package Authoring Error</strong> line is a cosmetic defect in
+        Apple's own installer metadata. The line that matters is
+        <strong>finished successfully</strong>.</p></div>
+      <p>After the fix the Analyzer ran and produced an 8-sheet report
+         (engine <code>5.6.6 b20251204</code>):</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Script</th><th>Lines</th><th>Category</th><th>Complexity</th></tr></thead>
+        <tbody>
+          <tr><td><code>01_customer_dim.sql</code></td><td class="num">19</td><td>TABLE_DDL_AS_SELECT</td><td>LOW</td></tr>
+          <tr><td><code>02_orders_agg.sql</code></td><td class="num">34</td><td>CTE_TABLE</td><td>LOW</td></tr>
+          <tr><td><code>03_semi_structured.sql</code></td><td class="num">21</td><td>CREATE_VIEW</td><td>LOW</td></tr>
+          <tr><td><code>04_merge_scd2.sql</code></td><td class="num">24</td><td>MERGE</td><td>LOW</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><p><strong>Gotcha:</strong> <code>analyze</code> writes <code>.tmp</code>
+        scratch files into the <code>--report-file</code> directory during the run.
+        Point it at a writable scratch dir.</p></div>
+
+      <h2><span class="num">07 — Transpile</span>Four files, zero failures</h2>
+      <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
+<pre><code>databricks labs lakebridge transpile -p lakebridge-eval \
+  --input-source ./samples/snowflake \
+  --output-folder ./out/transpiled \
+  --source-dialect snowflake \
+  --error-file-path ./out/errors.log \
+  --skip-validation true</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>Processed file: 01_customer_dim.sql    (errors: 0)
+Processed file: 02_orders_agg.sql      (errors: 0)
+Processed file: 03_semi_structured.sql (errors: 3)
+Processed file: 04_merge_scd2.sql      (errors: 0)
+
+total_files_processed  4    parsing_error_count     0
+total_queries_processed 4   generation_error_count  0</code></pre></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Snowflake</th><th>→ Databricks</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><code>NVL</code></td><td><code>COALESCE</code></td><td>✅</td></tr>
+          <tr><td><code>IFF</code></td><td><code>IF</code></td><td>✅</td></tr>
+          <tr><td><code>DATEADD</code></td><td><code>DATE_ADD</code></td><td>✅</td></tr>
+          <tr><td><code>LATERAL FLATTEN(input =&gt; …)</code></td><td><code>LATERAL VARIANT_EXPLODE(…)</code></td><td>✅</td></tr>
+          <tr><td><code>OBJECT_CONSTRUCT</code></td><td><code>STRUCT(… AS …)</code></td><td>✅</td></tr>
+          <tr><td><code>IS_NULL_VALUE</code></td><td><code>IS_VARIANT_NULL</code></td><td>✅</td></tr>
+          <tr><td><code>QUALIFY</code></td><td>preserved, <code>NULLS FIRST</code> explicit</td><td>✅</td></tr>
+        </tbody>
+      </table></div>
+
+      <details open><summary>The 3 warnings hide a real defect</summary>
+        <div class="det-body">
+          <div class="code"><div class="code-lbl"><span>sql — input</span></div>
+<pre><code>e.payload:user.id::STRING AS user_id</code></pre></div>
+          <div class="code"><div class="code-lbl"><span>sql — broken output</span></div>
+<pre class="out"><code>CAST(e.payload/* SESSION_USER() */.id AS VARCHAR(16777216)) AS user_id
+-- FIXME: Unsupported expression in a JSON path</code></pre></div>
+          <p>The JSON path key <code>user</code> was parsed as Snowflake's
+             <code>USER</code> session function and replaced with a <em>comment</em> —
+             producing structurally broken SQL, emitted only as a <strong>warning</strong>.</p>
+          <h3>Isolated with a controlled probe</h3>
+          <div class="code"><div class="code-lbl"><span>sql — probe</span><button class="copy">Copy</button></div>
+<pre><code>SELECT
+  e.payload:user.id::STRING     AS a_user,
+  e.payload:customer.id::STRING AS b_customer,
+  e.payload:table.id::STRING    AS c_table,
+  e.payload:device.id::STRING   AS d_device
+FROM raw.events e;</code></pre></div>
+          <div class="tbl"><table>
+            <thead><tr><th>Key</th><th>Result</th></tr></thead>
+            <tbody>
+              <tr><td><code>:user</code></td><td><span class="sev crit">Broken</span></td></tr>
+              <tr><td><code>:customer</code></td><td><span class="sev ok">Correct</span></td></tr>
+              <tr><td><code>:table</code> <em>(reserved word)</em></td><td><span class="sev ok">Correct</span></td></tr>
+              <tr><td><code>:device</code></td><td><span class="sev ok">Correct</span></td></tr>
+            </tbody>
+          </table></div>
+          <p>Since <code>:table</code> — itself a reserved word — transpiles fine, this is
+             <strong>not</strong> general reserved-word handling. It is specific to the
+             <code>USER</code> function collision.</p>
+          <div class="callout"><p><strong>Workaround:</strong> bracket-quote the key in the source
+            (<code>e.payload['user'].id</code>), or grep the output for
+            <code>SESSION_USER()</code> and fix those sites by hand.</p></div>
+        </div>
+      </details>
+
+      <h2><span class="num">08 — Storage</span>Unity Catalog sandbox</h2>
+      <details open><summary>Does this need a new workspace? No — twice over</summary>
+        <div class="det-body">
+          <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>$ databricks account workspaces list -p lakebridge-eval
+Error: Not Found
+
+$ databricks metastores current -p lakebridge-eval
+{ "metastore_id": "d1b26481-6554-4eca-9d4d-77578124b759",
+  "workspace_id": 7474645525776557 }</code></pre></div>
+          <p><strong>Not possible:</strong> no account-console API on this tier.</p>
+          <p><strong>Not useful either:</strong> Unity Catalog allows one metastore per region
+             per account, and catalogs live in the <em>metastore</em>. A second workspace in
+             the same region attaches to the same metastore and sees the same catalogs.</p>
+          <div class="callout"><p><strong>The catalog is the isolation boundary, not the workspace.</strong>
+            A workspace is a new office building; a catalog is a new filing cabinet.
+            If you want your files separate, you need a cabinet — a different building
+            doesn't help when everyone shares the filing room.</p></div>
+        </div>
+      </details>
+
+      <details><summary>REST API cannot create catalogs here — SQL can</summary>
+        <div class="det-body">
+          <div class="code"><div class="code-lbl"><span>error — POST /api/2.1/unity-catalog/catalogs</span></div>
+<pre class="out"><code>400 Bad Request — Metastore storage root URL does not exist.
+Default Storage is enabled in your account. You can use the UI to create
+a new catalog using Default Storage, or please provide a storage location.</code></pre></div>
+          <div class="code"><div class="code-lbl"><span>sql — works immediately</span><button class="copy">Copy</button></div>
+<pre><code>CREATE CATALOG IF NOT EXISTS lakebridge_demo
+  COMMENT 'Lakebridge evaluation sandbox';</code></pre></div>
+          <p><code>CREATE CATALOG</code> resolves Default Storage automatically; the REST
+             endpoint demands an explicit <code>storage_root</code>.</p>
+        </div>
+      </details>
+
+      <h2><span class="num">09 — Import</span>CSV, Excel, Parquet</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Format</th><th>Native?</th><th>Method</th><th>Rows</th></tr></thead>
+        <tbody>
+          <tr><td>CSV</td><td><span class="sev ok">Yes</span></td><td><code>read_files(format =&gt; 'csv')</code></td><td class="num">20</td></tr>
+          <tr><td>Parquet</td><td><span class="sev ok">Yes</span></td><td><code>read_files(format =&gt; 'parquet')</code></td><td class="num">50</td></tr>
+          <tr><td>Excel</td><td><span class="sev crit">No</span></td><td>local xlsx→parquet, then read_files</td><td class="num">15</td></tr>
+        </tbody>
+      </table></div>
+      <div class="code"><div class="code-lbl"><span>error — tested, not assumed</span></div>
+<pre class="out"><code>SELECT * FROM read_files('.../products.xlsx', format =&gt; 'xlsx');
+
+[CF_FAILED_TO_FIND_PROVIDER] Failed to find provider for xlsx SQLSTATE: 42000</code></pre></div>
+      <p><code>read_files</code> supports csv / json / parquet / avro / orc / text /
+         binaryFile — <strong>not xlsx</strong>. Excel needs a conversion step.</p>
+      <h3>Integrity proof — three formats joined</h3>
+      <div class="code"><div class="code-lbl"><span>sql</span><button class="copy">Copy</button></div>
+<pre><code>SELECT c.region, p.brand, count(*) AS order_cnt,
+       round(sum(o.order_total),2) AS revenue
+FROM   orders_parquet o
+JOIN   customers_csv  c ON o.customer_id = c.customer_id
+JOIN   products_excel p ON o.product_id  = p.product_id
+GROUP BY c.region, p.brand ORDER BY revenue DESC;</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>output</span></div>
+<pre class="out"><code>region  brand    order_cnt  revenue
+APAC    Globex   14         19383.45
+APAC    Acme      9         11630.45
+AMER    Initech   6          8810.05
+APAC    Initech   7          8487.70</code></pre></div>
+
+      <h2><span class="num">10 — Reconcile</span>Setup, and the wall it hit</h2>
+      <details><summary>configure-reconcile — answers and the prompt-order trap</summary>
+        <div class="det-body">
+          <div class="tbl"><table>
+            <thead><tr><th>Prompt</th><th>Answer</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td>Data Source</td><td><code>1</code> databricks</td>
+                  <td><strong>Critical.</strong> Choosing <code>snowflake</code> demands live
+                      Snowflake credentials — a dead end without an account</td></tr>
+              <tr><td>Report type</td><td><code>0</code> all</td><td>Provisions schema + row + data metadata</td></tr>
+              <tr><td>Source catalog / schema</td><td><code>lakebridge_demo</code> / <code>migration_lab</code></td><td>Real sandbox data</td></tr>
+              <tr><td>Target catalog / schema</td><td><code>lakebridge_demo</code> / <code>migration_lab</code></td><td>—</td></tr>
+              <tr><td>Metadata catalog / schema</td><td><code>lakebridge_demo</code> / <code>reconcile_meta</code></td><td>Keeps everything in the sandbox</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout"><p><strong>Prompt-order trap:</strong> the source/target prompts come
+            <em>first</em> and refer to the data being reconciled. The metadata location is
+            asked <em>four prompts later</em>. Confusing the two produces a broken config.</p></div>
+        </div>
+      </details>
+      <div class="code"><div class="code-lbl"><span>output — the failure</span></div>
+<pre class="out"><code>20:28:03 INFO  Deploying reconciliation dashboards.
+20:28:06 INFO  Dashboard deployed with URL: .../dashboardsv3/01f189cb92cf...
+20:28:07 INFO  Deploying reconciliation job.
+20:28:08 INFO  Creating new job configuration for job `Reconciliation Runner`
+20:28:08 ERROR InvalidParameterValue: Only serverless compute is supported
+               in the workspace.</code></pre></div>
+      <p>Everything except the job deployed: 6 metadata tables, a volume, 2 dashboards,
+         and <code>reconcile.yml</code>. <code>databricks jobs list</code> returned empty.</p>
+
+      <h2><span class="num">11 — Workaround</span>Building a serverless job</h2>
+      <p>Root cause, read from Lakebridge's own <code>deployment/job.py</code>:</p>
+      <div class="code"><div class="code-lbl"><span>python — lakebridge source</span></div>
+<pre class="out"><code>def _default_job_cluster(self) -> JobCluster:
+    return JobCluster(
+        job_cluster_key=self.DEFAULT_CLUSTER_NAME,
+        new_cluster=compute.ClusterSpec(
+            autoscale=compute.AutoScale(min_workers=2, max_workers=10),
+            spark_version=latest_lts_spark, ...))</code></pre></div>
+      <p>Lakebridge always builds a <strong>classic job cluster</strong>. A serverless-only
+         workspace rejects that payload server-side — the
+         <code>allow-cluster-create</code> entitlement does not override it.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Lakebridge default</th><th>Serverless replacement</th></tr></thead>
+        <tbody>
+          <tr><td><code>job_clusters: [Remorph_Reconciliation_Cluster]</code></td><td><em>omitted</em></td></tr>
+          <tr><td><code>task.job_cluster_key</code></td><td><code>task.environment_key</code></td></tr>
+          <tr><td>—</td><td><code>environments: [{spec:{client:"3", dependencies:[wheel]}}]</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="code"><div class="code-lbl"><span>json — recon_job_serverless.json</span><button class="copy">Copy</button></div>
+<pre><code>{
+  "name": "LAKEBRIDGE_Reconciliation_Runner",
+  "max_concurrent_runs": 2,
+  "parameters": [
+    { "name": "operation_name", "default": "reconcile" },
+    { "name": "install_folder", "default": "/Users/&lt;you&gt;/.lakebridge" }
+  ],
+  "environments": [{
+    "environment_key": "lakebridge_env",
+    "spec": { "client": "3",
+      "dependencies": ["/Workspace/Users/&lt;you&gt;/.lakebridge/wheels/databricks_labs_lakebridge-0.14.2-py3-none-any.whl"] }
+  }],
+  "tasks": [{
+    "task_key": "run_reconciliation",
+    "environment_key": "lakebridge_env",
+    "python_wheel_task": {
+      "package_name": "databricks_labs_lakebridge",
+      "entry_point": "reconcile",
+      "parameters": ["{{job.parameters.[operation_name]}}",
+                     "{{job.parameters.[install_folder]}}"]
+    }
+  }]
+}</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
+<pre><code>databricks jobs create --json @out/recon_job_serverless.json -p lakebridge-eval
+# -> { "job_id": 254503333498153 }</code></pre></div>
+      <p>Then register it where <code>ReconcileRunner._get_recon_job_id</code> looks —
+         <code>state.json</code>, key <code>"Reconciliation Runner"</code> exactly:</p>
+      <div class="code"><div class="code-lbl"><span>json — state.json</span><button class="copy">Copy</button></div>
+<pre><code>{ "resources": { "jobs": { "Reconciliation Runner": "254503333498153" } },
+  "version": 1 }</code></pre></div>
+      <div class="callout"><p>The first run then failed with
+        <code>ResourceDoesNotExist: recon_config_databricks_lakebridge_demo_all.json</code>
+        — <strong>not</strong> a compute error. The wheel installed and the code ran.
+        That file holds the table mappings and is <strong>not</strong> created by
+        <code>configure-reconcile</code>; you author it. Pattern:
+        <code>recon_config_&lt;dialect&gt;_&lt;catalog&gt;_&lt;report_type&gt;.json</code></p></div>
+
+      <h2><span class="num">12 — Proof</span>Break it on purpose</h2>
+      <p class="lede">A self-match proves nothing — a broken tool gives the same answer.
+        So we damaged a copy in four specific ways and asked the Reconciler to find them.</p>
+      <div class="code"><div class="code-lbl"><span>sql — the defect target</span><button class="copy">Copy</button></div>
+<pre><code>CREATE OR REPLACE TABLE lakebridge_demo.migration_lab.customers_v2 AS
+SELECT customer_id,
+  CASE WHEN customer_id=1003 THEN 'Customer_MODIFIED' ELSE customer_name END AS customer_name,
+  CASE WHEN customer_id=1007 THEN 'ANTARCTICA'        ELSE region        END AS region,
+  CASE WHEN customer_id=1011 THEN account_balance+999.99 ELSE account_balance END AS account_balance,
+  signup_date
+FROM lakebridge_demo.migration_lab.customers_csv
+WHERE customer_id &lt;&gt; 1019;          -- deleted row</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>output — job run</span></div>
+<pre class="out"><code>"status": { "state": "TERMINATED",
+            "termination_details": { "code": "SUCCESS" } }
+
+recon_id  36d1b2e2ac6b43d29ad51be0a4c87749     duration ~31s</code></pre></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Metric</th><th>Value</th><th>Expected</th></tr></thead>
+        <tbody>
+          <tr><td>missing_in_source</td><td class="num">0</td><td class="num">0 ✅</td></tr>
+          <tr><td>missing_in_target</td><td class="num">1</td><td class="num">1 ✅</td></tr>
+          <tr><td>absolute_mismatch</td><td class="num">3</td><td class="num">3 ✅</td></tr>
+          <tr><td>threshold_mismatch</td><td class="num">0</td><td class="num">0 ✅</td></tr>
+          <tr><td>schema_comparison</td><td>true</td><td>identical ✅</td></tr>
+          <tr><td>run_metrics.status</td><td>false</td><td>correct — differences found ✅</td></tr>
+        </tbody>
+      </table></div>
+      <div class="tbl"><table>
+        <thead><tr><th>ID</th><th>Column</th><th>Source</th><th>Target</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1003</td><td>customer_name</td><td>Customer_3</td><td>Customer_MODIFIED</td><td><span class="sev ok">Caught</span></td></tr>
+          <tr><td class="num">1007</td><td>region</td><td>APAC</td><td>ANTARCTICA</td><td><span class="sev ok">Caught</span></td></tr>
+          <tr><td class="num">1011</td><td>account_balance</td><td>4060.70</td><td>5060.69</td><td><span class="sev ok">Caught</span></td></tr>
+          <tr><td class="num">1019</td><td><em>whole row</em></td><td>present</td><td>absent</td><td><span class="sev ok">Caught</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout good"><p><strong>4 injected defects → 4 detected. 0 missed, 0 false positives.</strong>
+        The reconciler doesn't just run — it does its job correctly.</p></div>
+    </section>
+
+    <!-- ===================== SIMPLE ===================== -->
+    <section class="pane" id="simple" hidden>
+      <p class="lede">We installed a tool called Lakebridge on a Mac, connected it to a
+        Databricks account, and tested whether it really works. It does. We also found
+        two genuine bugs in the tool, and worked around both.</p>
+      <p>Think of it like buying a translation machine, setting it up, then testing it
+         with real documents to see if the translations are any good — and finding two
+         places where the machine gets confused.</p>
+
+      <h2><span class="num">Words first</span>Nothing assumed</h2>
+      <dl class="glossary">
+        <div><dt>Databricks</dt><dd>An online service where companies keep and analyse large amounts of data. Like a giant, very powerful spreadsheet system that lives on the internet.</dd></div>
+        <div><dt>SQL</dt><dd>The language people use to ask questions of data. "Show me all customers in Asia", written so computers understand.</dd></div>
+        <div><dt>Snowflake</dt><dd>A competitor to Databricks. Another place companies keep data.</dd></div>
+        <div><dt>Migration</dt><dd>Moving your data and your questions from one system to another.</dd></div>
+        <div><dt>Terminal</dt><dd>A text-only window where you type commands instead of clicking buttons.</dd></div>
+        <div><dt>Catalog → Schema → Table</dt><dd>How data is organised. Like Cabinet → Drawer → Folder.</dd></div>
+      </dl>
+
+      <h2><span class="num">Why</span>What Lakebridge is for</h2>
+      <p>Imagine your company has 5,000 questions written in "Snowflake language" and
+         wants to move to Databricks. The two speak <em>similar</em> languages, but not
+         identical ones — like British and American English, with more differences.
+         Rewriting 5,000 by hand would take months.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>The tool</th><th>What it does</th><th>Everyday comparison</th></tr></thead>
+        <tbody>
+          <tr><td>Profiler</td><td>Estimates the work ahead</td><td>A surveyor measuring a house before you move</td></tr>
+          <tr><td>Analyzer</td><td>Flags the tricky bits</td><td>A proofreader marking difficult passages</td></tr>
+          <tr><td>Transpiler</td><td>Rewrites into the new language</td><td>The actual translator</td></tr>
+          <tr><td>Reconciler</td><td>Checks nothing was lost</td><td>Counting boxes at the new house</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2><span class="num">Problem 1</span>The Analyzer refused to start</h2>
+      <p>This was the biggest problem of the day.</p>
+      <p>Modern Macs use a different type of chip than older Macs did. Software built
+         for the old chip won't run on the new one — unless you install a translator
+         called <strong>Rosetta 2</strong>.</p>
+      <p>Lakebridge's Analyzer was built <strong>only for the old chip</strong>. This Mac has
+         the new one and didn't have Rosetta 2. So the Analyzer simply could not start.</p>
+      <h3>How we proved it, rather than guessing</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>We asked</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>What type of program is the Analyzer?</td><td>Intel only</td></tr>
+          <tr><td>What chip does this Mac have?</td><td>Apple Silicon</td></tr>
+          <tr><td>Is Rosetta 2 installed?</td><td>No</td></tr>
+        </tbody>
+      </table></div>
+      <p>Three checks, one clear answer. The fix took one command. During the install
+         a scary-looking "Package Authoring Error" appeared — it's a harmless cosmetic
+         complaint inside Apple's own installer. The line that mattered read
+         <strong>finished successfully</strong>.</p>
+      <div class="callout"><p><strong>This is not your fault or a setup mistake.</strong> It's an
+        oversight by whoever packaged Lakebridge. Anyone with a modern Mac will hit it.</p></div>
+
+      <h2><span class="num">Problem 2</span>One word breaks the translator</h2>
+      <p>In one file Lakebridge produced broken output. The original meant
+         "get the user's ID". Lakebridge mistook the word <strong>user</strong> for a special
+         command and replaced it with a note-to-self instead of translating it.</p>
+      <div class="callout bad"><p><strong>Why this is dangerous:</strong> Lakebridge marked it only as a
+        <em>warning</em>, not an error. If nobody reads the warnings, broken code reaches
+        production and fails later.</p></div>
+      <h3>We proved exactly what causes it</h3>
+      <p>Rather than guess, we ran four almost-identical lines, changing only one word:</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Word used</th><th>Did it break?</th></tr></thead>
+        <tbody>
+          <tr><td><code>user</code></td><td><span class="sev crit">Broke</span></td></tr>
+          <tr><td><code>customer</code></td><td><span class="sev ok">Fine</span></td></tr>
+          <tr><td><code>table</code></td><td><span class="sev ok">Fine</span></td></tr>
+          <tr><td><code>device</code></td><td><span class="sev ok">Fine</span></td></tr>
+        </tbody>
+      </table></div>
+      <p>Only <code>user</code> breaks it — even <code>table</code>, also a special word,
+         works fine. <strong>What to do:</strong> if your data uses "user" as a label, check
+         those lines by hand after translating.</p>
+
+      <h2><span class="num">Question</span>Do I need a new workspace?</h2>
+      <p><strong>No — for two separate reasons.</strong> First, this type of account doesn't
+         allow creating them. Second, and more surprising: it wouldn't help anyway.</p>
+      <p>Databricks stores your data organisation in one shared place per region. A new
+         workspace would connect to that <em>same shared place</em> and see
+         <em>exactly the same data</em>.</p>
+      <div class="callout"><p>A workspace is like a new <strong>office building</strong>. A catalog is
+        like a new <strong>filing cabinet</strong>. If you want your files kept separate, you
+        need a new cabinet — moving buildings doesn't help, because everyone still
+        shares the same filing room.</p></div>
+
+      <h2><span class="num">Files</span>Excel doesn't work directly</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Format</th><th>Worked?</th><th>What happened</th></tr></thead>
+        <tbody>
+          <tr><td>CSV (plain text spreadsheet)</td><td><span class="sev ok">Yes</span></td><td>20 rows loaded immediately</td></tr>
+          <tr><td>Parquet (compressed data file)</td><td><span class="sev ok">Yes</span></td><td>50 rows loaded immediately</td></tr>
+          <tr><td>Excel (.xlsx)</td><td><span class="sev crit">No</span></td><td>Databricks cannot open Excel files at all</td></tr>
+        </tbody>
+      </table></div>
+      <p>The fix is to convert Excel into a format Databricks understands first. Not
+         difficult, but it must be built into your process — Databricks won't do it
+         for you.</p>
+
+      <h2><span class="num">The main event</span>Breaking things on purpose</h2>
+      <p>Anyone can run a checking tool against two identical tables and get "everything
+         matches". That proves nothing — a broken tool gives the same answer.</p>
+      <p>So we <strong>deliberately damaged</strong> a copy of the data in four ways, then asked
+         the Reconciler to find them without telling it what we'd done:</p>
+      <div class="tbl"><table>
+        <thead><tr><th>What we broke</th><th>Found it?</th></tr></thead>
+        <tbody>
+          <tr><td>Changed one customer's <strong>name</strong></td><td><span class="sev ok">Yes</span></td></tr>
+          <tr><td>Changed one customer's <strong>region</strong> to "ANTARCTICA"</td><td><span class="sev ok">Yes</span></td></tr>
+          <tr><td>Added 999.99 to one customer's <strong>balance</strong></td><td><span class="sev ok">Yes</span></td></tr>
+          <tr><td><strong>Deleted</strong> one customer entirely</td><td><span class="sev ok">Yes</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout good"><p><strong>Four faults planted. Four faults found. Nothing missed,
+        nothing wrongly flagged.</strong> It took about 31 seconds. This is the result that
+        matters — it proves the tool genuinely does its job.</p></div>
+
+      <h2><span class="num">Verdict</span>Six things to remember</h2>
+      <ol>
+        <li><strong>On a modern Mac, install Rosetta 2 first.</strong> Otherwise the Analyzer
+            won't start and the error won't tell you why.</li>
+        <li><strong>Check anything containing the word "user" by hand</strong> after translating.</li>
+        <li><strong>Excel files need converting first.</strong> Build it into your process.</li>
+        <li><strong>You don't need a new workspace.</strong> A new catalog gives the separation
+            you want, in minutes.</li>
+        <li><strong>On accounts without clusters,</strong> the checking tool needs manual setup.
+            It works — it just isn't automatic.</li>
+        <li><strong>Always test a checking tool by breaking something on purpose.</strong>
+            If it doesn't notice, it isn't protecting you.</li>
+      </ol>
+      <p><strong>Bottom line: Lakebridge works and is worth using.</strong> Two rough edges
+         exist, both have workarounds, and both are now documented.</p>
+    </section>
+
+    <!-- ===================== FINDINGS ===================== -->
+    <section class="pane" id="find" hidden>
+      <h2><span class="num">Summary</span>All nine findings</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>#</th><th>Sev</th><th>Finding</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td><span class="sev crit">Critical</span></td>
+              <td>Analyzer binary is x86_64-only; fails on Apple Silicon without Rosetta 2</td><td>Resolved</td></tr>
+          <tr><td class="num">2</td><td><span class="sev warn">Medium</span></td>
+              <td>Morpheus misparses <code>:user</code> JSON path as <code>SESSION_USER()</code></td><td>Open — upstream</td></tr>
+          <tr><td class="num">3</td><td><span class="sev ok">Good</span></td>
+              <td>Transpilation otherwise correct across 8 construct families</td><td>Verified</td></tr>
+          <tr><td class="num">4</td><td><span class="sev info">Info</span></td>
+              <td>Workspace is serverless-only; no clusters exist</td><td>Constraint</td></tr>
+          <tr><td class="num">5</td><td><span class="sev ok">Good</span></td>
+              <td>Analyzer output verified — 8 sheets, correct categories and function census</td><td>Verified</td></tr>
+          <tr><td class="num">6</td><td><span class="sev warn">Medium</span></td>
+              <td>UC catalogs REST API unusable on Default Storage; SQL works</td><td>Workaround</td></tr>
+          <tr><td class="num">7</td><td><span class="sev warn">Medium</span></td>
+              <td>No native Excel reader in Databricks SQL</td><td>Workaround</td></tr>
+          <tr><td class="num">8</td><td><span class="sev crit">Critical</span></td>
+              <td><code>configure-reconcile</code> job deploy fails on serverless-only workspaces</td><td>Workaround</td></tr>
+          <tr><td class="num">9</td><td><span class="sev ok">Good</span></td>
+              <td>End-to-end reconciliation verified with injected defects</td><td>Verified</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2><span class="num">Action</span>Worth reporting upstream</h2>
+      <div class="callout bad">
+        <p><strong>Finding 2 — <code>:user</code> JSON path corruption.</strong> Reproducible with a
+           four-line query. Emits structurally broken SQL as a <em>warning</em>, so it can
+           reach production silently.</p>
+      </div>
+      <div class="callout bad">
+        <p><strong>Finding 8 — serverless job deployment.</strong> Lakebridge should detect
+           serverless-only workspaces and emit an <code>environments</code> spec instead of a
+           classic job cluster. Currently <code>configure-reconcile</code> cannot complete on
+           Free/Express tier accounts at all.</p>
+      </div>
+
+      <h2><span class="num">Caveat</span>Maintenance debt</h2>
+      <div class="callout">
+        <p>The reconcile job is <strong>hand-built</strong>. Running
+           <code>databricks labs upgrade lakebridge</code> or re-running
+           <code>configure-reconcile</code> will try to recreate the Lakebridge-managed job and
+           fail on the same serverless constraint. It won't touch job
+           <code>254503333498153</code>, but it won't maintain it either — re-apply
+           <code>out/recon_job_serverless.json</code> after upgrades.</p>
+      </div>
+    </section>
+
+    <!-- ===================== REFERENCE ===================== -->
+    <section class="pane" id="ref" hidden>
+      <h2><span class="num">Reference</span>Every command, in order</h2>
+      <h3>One-time setup</h3>
+      <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
+<pre><code>brew trust databricks/tap &amp;&amp; brew install databricks
+brew install openjdk@21
+export JAVA_HOME="/opt/homebrew/opt/openjdk@21"
+export PATH="$JAVA_HOME/bin:$PATH"
+softwareupdate --install-rosetta --agree-to-license   # Apple Silicon only
+
+databricks auth login --host &lt;workspace-url&gt; --profile lakebridge-eval
+databricks current-user me -p lakebridge-eval</code></pre></div>
+
+      <h3>Install Lakebridge</h3>
+      <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
+<pre><code>export PATH="$(dirname $(uv python find 3.12)):$PATH"   # need Python >= 3.10.1
+databricks labs install lakebridge -p lakebridge-eval
+databricks labs lakebridge install-transpile -p lakebridge-eval    # interactive
+databricks labs lakebridge describe-transpile -p lakebridge-eval</code></pre></div>
+
+      <h3>Daily use</h3>
+      <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
+<pre><code>databricks labs lakebridge analyze -p lakebridge-eval \
+  --source-directory ./samples/snowflake \
+  --report-file ./out/analysis.xlsx --source-tech Snowflake
+
+databricks labs lakebridge transpile -p lakebridge-eval \
+  --input-source ./samples/snowflake --output-folder ./out/transpiled \
+  --source-dialect snowflake --error-file-path ./out/errors.log \
+  --skip-validation true
+
+databricks labs lakebridge configure-reconcile -p lakebridge-eval  # interactive
+
+databricks jobs run-now -p lakebridge-eval \
+  --json '{"job_id":254503333498153,"job_parameters":{"operation_name":"reconcile"}}'</code></pre></div>
+
+      <h3>Maintenance and teardown</h3>
+      <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
+<pre><code>databricks labs upgrade lakebridge
+databricks labs uninstall lakebridge
+databricks jobs delete 254503333498153 -p lakebridge-eval</code></pre></div>
+      <div class="code"><div class="code-lbl"><span>sql — destructive, review first</span><button class="copy">Copy</button></div>
+<pre><code>DROP CATALOG IF EXISTS lakebridge_demo CASCADE;</code></pre></div>
+
+      <h2><span class="num">Inventory</span>Final state</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Component</th><th>Version</th><th>Path</th></tr></thead>
+        <tbody>
+          <tr><td>Databricks CLI</td><td>1.9.0</td><td><code>/opt/homebrew/bin/databricks</code></td></tr>
+          <tr><td>Lakebridge</td><td>0.14.2</td><td><code>~/.databricks/labs/lakebridge</code></td></tr>
+          <tr><td>Bladebridge</td><td>0.3.0</td><td><code>~/.databricks/labs/remorph-transpilers/bladebridge</code></td></tr>
+          <tr><td>Morpheus</td><td>0.9.0</td><td><code>~/.databricks/labs/remorph-transpilers/databricks-morph-plugin</code></td></tr>
+          <tr><td>Analyzer engine</td><td>5.6.6 b20251204</td><td>bundled</td></tr>
+          <tr><td>Java</td><td>OpenJDK 21.0.12</td><td><code>/opt/homebrew/opt/openjdk@21</code></td></tr>
+          <tr><td>Labs venv Python</td><td>3.12.13</td><td><code>~/.databricks/labs/lakebridge/state/venv</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="code"><div class="code-lbl"><span>workspace objects</span></div>
+<pre class="out"><code>lakebridge_demo                          MANAGED_CATALOG
+├── migration_lab
+│   ├── landing                          VOLUME
+│   ├── migration_metadata                4 rows
+│   ├── customers_csv                    20 rows
+│   ├── products_excel                   15 rows
+│   ├── orders_parquet                   50 rows
+│   └── customers_v2                     19 rows  (defect target)
+└── reconcile_meta
+    ├── reconcile_volume                 VOLUME
+    ├── main / metrics / details
+    └── aggregate_rules / aggregate_metrics / aggregate_details
+
+Job  254503333498153  LAKEBRIDGE_Reconciliation_Runner (serverless)</code></pre></div>
+    </section>
+
+    </main>
+  </div>
+
+  <footer>
+    Lakebridge v0.14.2 · macOS 26.3.2 arm64 · 27 July 2026 · 32 logged steps ·
+    all output captured live, none reconstructed
+  </footer>
+</div>
+
+<script>
+const STEPS = [
+{"s":1,"a":"preflight_network","k":"PASS"},
+{"s":2,"a":"install_databricks_cli","k":"PASS"},
+{"s":3,"a":"install_java21","k":"PASS"},
+{"s":4,"a":"cli_auth_oauth","k":"PASS"},
+{"s":5,"a":"workspace_inventory","k":"PASS"},
+{"s":6,"a":"install_lakebridge","k":"PASS"},
+{"s":7,"a":"verify_venv_python","k":"PASS"},
+{"s":8,"a":"describe_transpile","k":"PASS"},
+{"s":9,"a":"install_transpile","k":"PASS"},
+{"s":10,"a":"create_sample_corpus","k":"PASS"},
+{"s":11,"a":"analyze","k":"FAIL"},
+{"s":12,"a":"transpile","k":"PASS"},
+{"s":"12b","a":"defect_isolation_probe","k":"PASS"},
+{"s":13,"a":"configure_reconcile (deferred)","k":"GATED"},
+{"s":"11b","a":"analyze_retry_post_rosetta","k":"PASS"},
+{"s":14,"a":"start_warehouse","k":"PASS"},
+{"s":15,"a":"generate_sample_data","k":"PASS"},
+{"s":16,"a":"create_catalog","k":"PASS"},
+{"s":17,"a":"create_schema_table_volume","k":"PASS"},
+{"s":18,"a":"insert_metadata_rows","k":"PASS"},
+{"s":19,"a":"upload_files_to_volume","k":"PASS"},
+{"s":20,"a":"import_csv_parquet","k":"PASS"},
+{"s":21,"a":"import_excel","k":"PARTIAL"},
+{"s":22,"a":"verify_integrity","k":"PASS"},
+{"s":23,"a":"configure_reconcile","k":"BLOCKED"},
+{"s":24,"a":"grant_permissions","k":"PASS"},
+{"s":25,"a":"configure_reconcile","k":"PARTIAL"},
+{"s":26,"a":"build_serverless_recon_job","k":"PASS"},
+{"s":27,"a":"register_job_in_install_state","k":"PASS"},
+{"s":28,"a":"first_recon_run","k":"FAIL"},
+{"s":29,"a":"create_defect_target_and_mapping","k":"PASS"},
+{"s":30,"a":"end_to_end_reconcile","k":"PASS"}
+];
+
+const tl = document.getElementById('tl');
+tl.innerHTML = STEPS.map(x =>
+  `<li class="${x.k}" data-k="${x.k}"><b>${x.s} · ${x.a}</b>${x.k}</li>`).join('');
+
+document.querySelectorAll('.chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(b =>
+      b.setAttribute('aria-pressed', String(b === btn)));
+    const f = btn.dataset.f;
+    let shown = 0;
+    tl.querySelectorAll('li').forEach(li => {
+      const k = li.dataset.k;
+      const ok = f === 'ALL' || k === f ||
+                 (f === 'OTHER' && ['PARTIAL','BLOCKED','GATED'].includes(k));
+      li.hidden = !ok;
+      if (ok) shown++;
+    });
+    document.getElementById('count').textContent = shown;
+  });
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t =>
+      t.setAttribute('aria-selected', String(t === tab)));
+    document.querySelectorAll('.pane').forEach(p =>
+      p.hidden = (p.id !== tab.dataset.pane));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+
+document.querySelectorAll('.copy').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const pre = btn.closest('.code').querySelector('pre');
+    try {
+      await navigator.clipboard.writeText(pre.innerText);
+      const t = btn.textContent; btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = t; }, 1400);
+    } catch { btn.textContent = 'Press ⌘C'; }
+  });
+});
+</script>

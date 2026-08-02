@@ -1,0 +1,443 @@
+/* ============================================================================
+   Lakebridge Web UI — design tokens + primitives (G17)
+
+   The spec for this file is docs/webapp/DESIGN-SYSTEM.md. Rules that matter:
+     - No component may hardcode a colour. Everything routes through a token.
+     - Dark is the authored default; light is a designed theme, not an inversion.
+     - Tokens are declared four times so an explicit user choice (data-theme)
+       beats the OS preference in BOTH directions.
+   Loaded before index.css (see main.tsx) so component styles can override.
+   ========================================================================= */
+
+/* ---------- 1. Light values are the base ---------- */
+:root {
+  --bg-0: #ffffff;
+  --bg-1: #f7f9fe;
+  --bg-2: #eef2fa;
+  --bg-3: #e3eaf7;
+  --line: rgba(10, 20, 40, 0.10);
+  --line-2: rgba(10, 20, 40, 0.16);
+
+  --text: #101828;
+  --text-h: #000000;
+  --muted: #556076;
+  --faint: #8792a8;
+
+  --redshift: #e05320;
+  --redshift-soft: #ff6b3d;
+  --starburst: #8b3fd8;
+  --starburst-soft: #a855f7;
+  --databricks: #0e91ad;
+  --databricks-soft: #22d3ee;
+
+  --ok: #0f8a55;
+  --running: #b45309;
+  --failed: #c22b25;
+  --queued: #8792a8;
+
+  --shadow-sm: 0 2px 8px -2px rgba(16, 24, 40, 0.10);
+  --shadow-md: 0 12px 28px -12px rgba(16, 24, 40, 0.22);
+  --shadow-lg: 0 24px 60px -24px rgba(16, 24, 40, 0.30);
+  --spotlight-strength: 0.10;
+}
+
+/* ---------- 2. Dark values (OS preference, pre-JS paint) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-0: #0a0e1a;
+    --bg-1: #0e1424;
+    --bg-2: #131a2e;
+    --bg-3: #1a2340;
+    --line: rgba(255, 255, 255, 0.07);
+    --line-2: rgba(255, 255, 255, 0.12);
+
+    --text: #edf1fa;
+    --text-h: #ffffff;
+    --muted: #93a0bf;
+    --faint: #5a6782;
+
+    --redshift: #ff6b3d;
+    --redshift-soft: #ff8c5a;
+    --starburst: #a855f7;
+    --starburst-soft: #c084fc;
+    --databricks: #22d3ee;
+    --databricks-soft: #67e8f9;
+
+    --ok: #34d399;
+    --running: #fbbf24;
+    --failed: #f87171;
+    --queued: #5a6782;
+
+    --shadow-sm: 0 2px 10px -2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 14px 32px -14px rgba(0, 0, 0, 0.65);
+    --shadow-lg: 0 24px 60px -24px rgba(0, 0, 0, 0.75);
+    --spotlight-strength: 0.20;
+  }
+}
+
+/* ---------- 3. Explicit dark (wins over OS light) ---------- */
+:root[data-theme="dark"] {
+  --bg-0: #0a0e1a;
+  --bg-1: #0e1424;
+  --bg-2: #131a2e;
+  --bg-3: #1a2340;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.12);
+
+  --text: #edf1fa;
+  --text-h: #ffffff;
+  --muted: #93a0bf;
+  --faint: #5a6782;
+
+  --redshift: #ff6b3d;
+  --redshift-soft: #ff8c5a;
+  --starburst: #a855f7;
+  --starburst-soft: #c084fc;
+  --databricks: #22d3ee;
+  --databricks-soft: #67e8f9;
+
+  --ok: #34d399;
+  --running: #fbbf24;
+  --failed: #f87171;
+  --queued: #5a6782;
+
+  --shadow-sm: 0 2px 10px -2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 14px 32px -14px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 24px 60px -24px rgba(0, 0, 0, 0.75);
+  --spotlight-strength: 0.20;
+}
+
+/* ---------- 4. Explicit light (wins over OS dark) ---------- */
+:root[data-theme="light"] {
+  --bg-0: #ffffff;
+  --bg-1: #f7f9fe;
+  --bg-2: #eef2fa;
+  --bg-3: #e3eaf7;
+  --line: rgba(10, 20, 40, 0.10);
+  --line-2: rgba(10, 20, 40, 0.16);
+
+  --text: #101828;
+  --text-h: #000000;
+  --muted: #556076;
+  --faint: #8792a8;
+
+  --redshift: #e05320;
+  --redshift-soft: #ff6b3d;
+  --starburst: #8b3fd8;
+  --starburst-soft: #a855f7;
+  --databricks: #0e91ad;
+  --databricks-soft: #22d3ee;
+
+  --ok: #0f8a55;
+  --running: #b45309;
+  --failed: #c22b25;
+  --queued: #8792a8;
+
+  --shadow-sm: 0 2px 8px -2px rgba(16, 24, 40, 0.10);
+  --shadow-md: 0 12px 28px -12px rgba(16, 24, 40, 0.22);
+  --shadow-lg: 0 24px 60px -24px rgba(16, 24, 40, 0.30);
+  --spotlight-strength: 0.10;
+}
+
+/* ---------- Theme-independent tokens ---------- */
+:root {
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --grad: linear-gradient(135deg, var(--starburst) 0%, var(--redshift) 100%);
+  --grad-soft: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--starburst) 16%, transparent),
+    color-mix(in srgb, var(--redshift) 16%, transparent)
+  );
+
+  /* Foreground on a saturated accent/gradient fill. White in both themes —
+     the accent surfaces stay dark enough for it — but tokenised so no
+     component hardcodes a colour (design-system rule #1). */
+  --on-accent: #ffffff;
+
+  --r-control: 10px;
+  --r-tile: 12px;
+  --r-card: 16px;
+  --r-panel: 20px;
+  --r-pill: 100px;
+
+  --rail-w: 208px;
+  --rail-w-collapsed: 60px;
+  /* G19: the rail widens to this while the data explorer is expanded inside
+     it. Sized so a schema row (name + refresh + "batch migrate schema") and a
+     table row (name + migrate + copy data + eye) both fit on one line. */
+  --rail-w-explorer: 372px;
+  --data-panel-w: 320px;
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---------- Compatibility aliases ----------
+   index.css still carries component rules written against the pre-G17 token
+   names. These aliases map them onto the new system so every existing surface
+   picks up the new palette immediately (including in light mode) instead of
+   falling back to unstyled defaults. New code must use the real tokens above;
+   these exist so the restyle can proceed component-by-component without a
+   flash of broken styling in between. */
+:root {
+  --bg: var(--bg-0);
+  --border: var(--line);
+  --code-bg: var(--bg-1);
+  --sans: var(--font-body);
+  --mono: var(--font-mono);
+
+  /* Old accent names → new semantic ones. */
+  --violet: var(--starburst);
+  --violet-soft: var(--starburst-soft);
+  --amber: var(--redshift);
+  --amber-soft: var(--redshift-soft);
+  --glyph-table: var(--databricks);
+  --glyph-view: var(--starburst);
+  --glyph-routine: var(--redshift);
+  --heading-font: var(--font-display);
+  --body-font: var(--font-body);
+
+  --warn-bg: color-mix(in srgb, var(--running) 12%, transparent);
+  --warn-border: color-mix(in srgb, var(--running) 34%, transparent);
+  --warn-text: var(--running);
+}
+
+/* ============================================================================
+   Primitives
+   ========================================================================= */
+
+.icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+/* ---------- Card ---------- */
+.card {
+  position: relative;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  transition:
+    transform 0.4s var(--ease),
+    background 0.4s var(--ease),
+    border-color 0.4s var(--ease),
+    box-shadow 0.4s var(--ease);
+}
+
+/* Cursor-follow spotlight. --mx/--my are written by useSpotlight; the 50%
+   fallback keeps it centred before the first mousemove. */
+.card-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--starburst) calc(var(--spotlight-strength) * 100%), transparent),
+    color-mix(in srgb, var(--redshift) calc(var(--spotlight-strength) * 40%), transparent) 38%,
+    transparent 62%
+  );
+}
+
+/* Gradient border on hover, drawn as a masked ring so it doesn't shift layout. */
+.card-spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+  background: var(--grad);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.card-spotlight:hover {
+  transform: translateY(-4px);
+  background: var(--bg-3);
+  border-color: transparent;
+  box-shadow: var(--shadow-md);
+}
+.card-spotlight:hover::before,
+.card-spotlight:hover::after {
+  opacity: 1;
+}
+
+/* Card content must sit above the ::before spotlight layer. */
+.card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Icon tile ---------- */
+.icon-tile {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r-tile);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--grad-soft);
+  border: 1px solid var(--line);
+  color: var(--starburst-soft);
+  transition:
+    transform 0.45s var(--ease),
+    background 0.45s var(--ease),
+    color 0.45s var(--ease),
+    box-shadow 0.45s var(--ease);
+}
+.icon-tile-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+.card-spotlight:hover .icon-tile {
+  transform: translateY(-2px) rotate(-6deg) scale(1.08);
+  background: var(--grad);
+  color: #fff;
+  box-shadow: 0 12px 26px -8px color-mix(in srgb, var(--starburst) 60%, transparent);
+}
+
+/* ---------- Status pill ----------
+   One implementation for the whole app. Callers set --state to a status token
+   (--ok / --running / --failed / --queued) and everything else follows. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--state, var(--muted));
+  border: 1px solid color-mix(in srgb, var(--state, var(--muted)) 32%, transparent);
+  background: color-mix(in srgb, var(--state, var(--muted)) 12%, transparent);
+}
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.pill-live .pill-dot {
+  box-shadow: 0 0 8px currentColor;
+  animation: pulse 2.2s infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.72);
+  }
+}
+
+.state-ok { --state: var(--ok); }
+.state-running { --state: var(--running); }
+.state-failed { --state: var(--failed); }
+.state-queued { --state: var(--queued); }
+
+/* ---------- System accents ---------- */
+.sys-redshift { --sys: var(--redshift); }
+.sys-starburst { --sys: var(--starburst); }
+.sys-databricks { --sys: var(--databricks); }
+
+.sys-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--sys, var(--muted));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--sys, var(--muted)) 70%, transparent);
+}
+
+/* ---------- Uppercase section label ---------- */
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* ---------- Focus ---------- */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--starburst-soft);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- Scrollbars ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 100px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+  background-clip: content-box;
+}
+
+/* ---------- Staged entrance ---------- */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-up {
+  animation: fadeUp 0.45s var(--ease) both;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card-spotlight:hover {
+    transform: none;
+  }
+}

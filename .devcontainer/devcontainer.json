@@ -1,0 +1,36 @@
+{
+  "name": "Lakebridge migration console",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "forwardPorts": [8811, 5173],
+  "portsAttributes": {
+    "8811": { "label": "backend (FastAPI adapter)", "onAutoForward": "silent" },
+    "5173": { "label": "frontend (vite)", "onAutoForward": "openBrowser" }
+  },
+
+  "//": [
+    "Port visibility is deliberately NOT set to public here.",
+    "A public Codespaces port is unauthenticated, and this app creates real",
+    "Databricks objects, copies real row data, and spends a live LLM key.",
+    "Make a port visible from the Ports panel only when you mean to, and",
+    "prefer Organization over Public."
+  ],
+
+  "remoteEnv": {
+    "DATABRICKS_PROFILE": "",
+    "DATABRICKS_HOST": "${localEnv:DATABRICKS_HOST}",
+    "DATABRICKS_TOKEN": "${localEnv:DATABRICKS_TOKEN}"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "dbaeumer.vscode-eslint"],
+      "settings": { "python.defaultInterpreterPath": "backend/.venv/bin/python" }
+    }
+  }
+}

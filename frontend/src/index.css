@@ -1,0 +1,1512 @@
+/* G15 Phase A — Space Grotesk (headings/labels) + Inter (body) type
+   pairing adopted from the reviewed "Data Analytics AI"/"LAKEBRIDGE AI"
+   HTML references. No existing font-loading convention was present in this
+   file before this change (checked: no prior @import/<link>), so this is
+   the project's first font import — normal Google Fonts @import, per the
+   plan's fallback instruction if no convention already existed. */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+
+/* Design tokens now live in theme.css (imported before this file).
+   Never re-declare colour tokens here — see docs/webapp/DESIGN-SYSTEM.md. */
+
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+/* G5 — screen-reader-only content: kept in the accessibility tree (unlike
+   display:none/visibility:hidden, which are skipped by assistive tech)
+   but removed from visual layout. Standard "visually hidden" recipe. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.mono { font-family: var(--mono); font-size: 0.9em; }
+.empty { color: var(--text); opacity: 0.6; padding: 1em 0; }
+.error {
+  background: var(--warn-bg); border: 1px solid var(--failed);
+  color: var(--failed); padding: 0.6em 1em; border-radius: 4px; margin: 0 0 1em;
+}
+
+/* ==========================================================================
+   G17 app shell — left rail · persistent data explorer · main column
+   ========================================================================== */
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; text-wrap: balance; }
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr;
+  height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 55% at 12% 0%, color-mix(in srgb, var(--starburst) 8%, transparent), transparent 62%),
+    radial-gradient(60% 50% at 92% 100%, color-mix(in srgb, var(--redshift) 7%, transparent), transparent 60%),
+    var(--bg-0);
+}
+
+/* ---------- Left rail ---------- */
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 18px 12px;
+  background: var(--bg-1);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+}
+.brand { display: flex; align-items: center; gap: 11px; padding: 4px 6px 0; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--grad); color: var(--on-accent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--starburst) 45%, transparent);
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.brand-text strong { font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--text-h); }
+.brand-text small {
+  font-size: 10.5px; color: var(--faint); letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+.rail-nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.rail-item {
+  position: relative; width: 100%;
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 11px; border: 0; border-radius: var(--r-control);
+  background: none; color: var(--muted); cursor: pointer;
+  font-family: var(--font-body); font-size: 13.5px; font-weight: 500; text-align: left;
+  transition: color 0.25s, background 0.25s, transform 0.25s var(--ease);
+}
+.rail-item:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+.rail-item.active { color: var(--text-h); background: var(--grad-soft); font-weight: 600; }
+.rail-item.active::before {
+  content: ""; position: absolute; left: 0; top: 20%; bottom: 20%;
+  width: 3px; border-radius: 3px; background: var(--grad);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--starburst) 70%, transparent);
+}
+.rail-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rail-foot { border-top: 1px solid var(--line); padding-top: 12px; }
+
+/* ---------- Data explorer (G18: lives inside the Migrations page) ---------- */
+.data-panel {
+  width: var(--data-panel-w);
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  overflow: hidden;
+  /* Sticks alongside the work column while it scrolls, and never grows past
+     the viewport — its own body scrolls instead. */
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 140px);
+}
+.data-panel-collapsed {
+  width: 52px; align-items: center; gap: 14px; padding-top: 14px;
+  max-height: none;
+}
+.data-panel-rail-dots { display: flex; flex-direction: column; gap: 10px; }
+.data-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 16px 8px;
+}
+.data-panel-note {
+  margin: 0 16px 12px; font-size: 11.5px; color: var(--faint); line-height: 1.5;
+}
+/* G19: both axes scroll here, so a long qualified name is reachable by
+   scrolling rather than being cut off. `overflow: auto` on both means the
+   horizontal bar sits at the bottom of the panel, mirroring the vertical one. */
+.data-panel-scroll { flex: 1; overflow: auto; padding: 0 8px 24px; }
+/* Tree content sizes to its widest row instead of the panel, which is what
+   actually produces the horizontal scrollbar. */
+.data-panel-scroll > * { min-width: max-content; }
+.panel-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px;
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  cursor: pointer; transition: color 0.25s, border-color 0.25s, background 0.25s;
+}
+.panel-toggle:hover { color: var(--text); border-color: var(--line-2); background: var(--bg-2); }
+
+.sys-section { border-radius: var(--r-control); margin-bottom: 4px; }
+.sys-section.open { background: color-mix(in srgb, var(--sys) 5%, transparent); }
+.sys-section-head {
+  width: 100%; display: flex; align-items: center; gap: 9px;
+  padding: 9px 10px; border: 0; background: none; cursor: pointer;
+  color: var(--text); font-family: var(--font-display); font-size: 13.5px; font-weight: 600;
+  border-radius: var(--r-control); text-align: left;
+}
+.sys-section-head:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.sys-caret { color: var(--faint); transition: transform 0.25s var(--ease); }
+.sys-caret.open { transform: rotate(90deg); }
+.sys-section-name { flex: 1; }
+.sys-section-sub {
+  font-family: var(--font-body); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);
+}
+.sys-section-body { padding: 2px 4px 10px; }
+/* The tree components render their own panel chrome, which would double up
+   inside this sidebar — flatten it here. */
+.sys-section-body .source-panel {
+  border: 0; background: none; padding: 0; margin: 0; box-shadow: none;
+}
+.sys-section-body .source-panel > h3 { display: none; }
+
+/* ---------- Main column ---------- */
+.main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.topbar {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;
+  padding: 20px 30px 16px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-1) 70%, transparent);
+  backdrop-filter: blur(14px);
+}
+.topbar-titles { min-width: 0; }
+.topbar h1 { margin: 0; font-size: 22px; font-weight: 600; color: var(--text-h); }
+.topbar-sub {
+  margin: 4px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.55; max-width: 78ch;
+}
+.content { flex: 1; overflow-y: auto; padding: 24px 30px 56px; }
+.section-title {
+  font-size: 15px; font-weight: 600; color: var(--text-h);
+  margin: 30px 0 12px; display: flex; align-items: center; gap: 10px;
+}
+.section-title::after {
+  content: ""; flex: 1; height: 1px; background: var(--line);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1180px) {
+  .data-panel { width: 268px; }
+}
+@media (max-width: 900px) {
+  .shell { grid-template-columns: var(--rail-w-collapsed) 1fr; }
+  .rail-label, .brand-text { display: none; }
+  .rail { align-items: center; }
+  .rail-item { justify-content: center; padding: 10px; }
+  .content, .topbar { padding-left: 18px; padding-right: 18px; }
+
+  /* G19: the icon-only rail can't host the explorer. When it is open the rail
+     stays wide and keeps its labels — the explorer is the drag source, so
+     silently hiding it would remove the page's primary interaction. Collapsing
+     it (the rail item, or the panel's own hide button) reclaims the space. */
+  .shell-explorer-open { grid-template-columns: var(--rail-w-explorer) 1fr; }
+  .shell-explorer-open .rail { align-items: stretch; }
+  .shell-explorer-open .rail-label,
+  .shell-explorer-open .brand-text { display: block; }
+  .shell-explorer-open .rail-item { justify-content: flex-start; padding: 9px 11px; }
+  .shell-explorer-open .brand-text { display: flex; }
+}
+/* Narrower than the rail-plus-explorer pair can occupy without squeezing the
+   work area to nothing, the explorer gives up its extra width and its rows
+   scroll horizontally instead. */
+@media (max-width: 720px) {
+  .shell-explorer-open { grid-template-columns: minmax(0, 62vw) 1fr; }
+  .rail-explorer .data-panel-scroll { overflow-x: auto; }
+}
+
+.trigger-bar { display: flex; flex-wrap: wrap; gap: 0.6em; margin-bottom: 1.5em; }
+.trigger-bar button, .back-btn {
+  font: inherit; padding: 0.55em 1em; border-radius: 5px;
+  border: 1px solid var(--border); background: var(--code-bg);
+  color: var(--text-h); cursor: pointer;
+}
+.trigger-bar button:hover, .back-btn:hover { border-color: var(--text-h); }
+.trigger-bar button:disabled { opacity: 0.5; cursor: default; }
+
+.run-table { width: 100%; border-collapse: collapse; }
+.run-table th {
+  text-align: left; font-size: 0.75em; letter-spacing: 0.05em;
+  text-transform: uppercase; opacity: 0.6; padding: 0.5em 0.7em;
+  border-bottom: 1px solid var(--border);
+}
+.run-table td { padding: 0.6em 0.7em; border-bottom: 1px solid var(--border); }
+.run-row { cursor: pointer; }
+.run-row:hover { background: var(--code-bg); }
+
+/* status is always text + icon, never color alone */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 0.35em;
+  font-size: 0.85em; font-weight: 600; padding: 0.15em 0.6em;
+  border-radius: 999px; border: 1px solid currentColor;
+}
+.status-queued { color: var(--queued); }
+.status-running { color: var(--running); }
+.status-completed { color: var(--ok); }
+.status-failed { color: var(--failed); }
+
+.caveat {
+  margin-left: 0.5em; font-size: 0.8em; color: var(--warn-text);
+  border-bottom: 1px dotted currentColor; cursor: help;
+}
+
+.run-detail h2 { margin: 0.4em 0 0.6em; }
+.run-meta { display: flex; align-items: center; gap: 1em; margin-bottom: 1em; }
+
+.callout-warn {
+  background: var(--warn-bg); border: 1px solid var(--warn-border);
+  border-radius: 5px; padding: 0.7em 1em; margin-bottom: 1.2em; font-size: 0.92em;
+}
+
+.log-view {
+  background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 5px; padding: 0.8em 1em; max-height: 420px; overflow-y: auto;
+}
+.log-line { display: flex; gap: 0.6em; padding: 0.15em 0; font-size: 0.85em; }
+.log-ts { opacity: 0.45; white-space: nowrap; }
+.log-type { opacity: 0.6; white-space: nowrap; }
+.log-stderr .log-msg { color: var(--failed); }
+.log-msg { white-space: pre-wrap; word-break: break-word; }
+
+/* ---------------------------------------------------------------- G3.3 */
+
+.explorer-columns {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.2em;
+  align-items: start; margin-bottom: 2em;
+}
+@media (max-width: 900px) { .explorer-columns { grid-template-columns: 1fr; } }
+
+.source-panel {
+  border: 1px solid var(--border); border-radius: 6px; padding: 0.9em 1em;
+  background: var(--bg); min-height: 200px;
+}
+.source-panel h3 { margin: 0 0 0.6em; font-size: 1em; display: flex; align-items: center; gap: 0.5em; flex-wrap: wrap; }
+.muted { opacity: 0.65; font-size: 0.85em; }
+
+.engine-dot {
+  display: inline-block; width: 0.65em; height: 0.65em; border-radius: 50%;
+  background: var(--ok);
+}
+.engine-dot.lakebridge { background: var(--ok); }
+.engine-dot.experimental { background: var(--running); }
+.engine-dot.data { background: var(--databricks); }
+
+.engine-tag {
+  font-size: 0.68em; font-weight: 600; letter-spacing: 0.02em; padding: 0.15em 0.5em;
+  border-radius: 999px; border: 1px solid var(--ok); color: var(--ok); text-transform: uppercase;
+}
+.engine-tag.experimental { border-color: var(--running); color: var(--running); }
+
+.tree-node { margin: 0.15em 0; }
+.tree-toggle {
+  font: inherit; background: none; border: none; color: var(--text-h);
+  cursor: pointer; padding: 0.25em 0.1em; display: flex; align-items: center; gap: 0.4em;
+  width: 100%; text-align: left;
+}
+.tree-toggle:hover { text-decoration: underline; }
+.tree-caret { display: inline-block; transition: transform 0.1s; font-size: 0.75em; }
+.tree-caret.open { transform: rotate(90deg); }
+.tree-children { margin-left: 1.1em; border-left: 1px dashed var(--border); padding-left: 0.7em; }
+
+.tree-leaf-row { display: flex; align-items: center; gap: 0.4em; }
+.tree-leaf {
+  display: flex; align-items: baseline; gap: 0.5em; padding: 0.25em 0.4em;
+  border-radius: 4px; cursor: grab; flex: 1; font-size: 0.9em;
+}
+.tree-leaf:hover { background: var(--code-bg); }
+.tree-leaf:active { cursor: grabbing; }
+.tree-leaf-warn { border: 1px dashed var(--warn-border); }
+.tree-leaf-icon { opacity: 0.5; }
+.tree-leaf-sub { opacity: 0.5; font-size: 0.75em; text-transform: uppercase; }
+
+.mini-btn {
+  font: inherit; font-size: 0.72em; padding: 0.2em 0.5em; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--code-bg); color: var(--text);
+  cursor: pointer; white-space: nowrap;
+}
+.mini-btn:hover { border-color: var(--text-h); }
+
+.migration-card-view-data { margin-top: 0.6em; }
+.preview-panel { margin-top: 0.4em; }
+.preview-table {
+  border-collapse: collapse; font-size: 0.8em; margin-top: 0.4em; width: 100%;
+}
+.preview-table th, .preview-table td {
+  border: 1px solid var(--border); padding: 0.3em 0.5em; text-align: left;
+}
+.preview-table th { background: var(--code-bg); }
+
+.context-menu {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.3em; box-shadow: var(--shadow-md); min-width: 140px;
+}
+.context-menu-item {
+  display: block; width: 100%; text-align: left; font: inherit; font-size: 0.85em;
+  padding: 0.4em 0.6em; border: none; background: none; color: var(--text-h);
+  border-radius: 4px; cursor: pointer;
+}
+.context-menu-item:hover { background: var(--code-bg); }
+
+.target-column { display: flex; }
+.target-zone {
+  border: 2px dashed var(--border); border-radius: 8px; padding: 1.4em;
+  display: flex; gap: 0.8em; align-items: flex-start; width: 100%; min-height: 200px;
+  transition: border-color 0.1s, background 0.1s;
+}
+.target-zone-hover { border-color: var(--ok); background: var(--code-bg); }
+.target-zone-icon { font-size: 1.8em; opacity: 0.6; }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: color-mix(in srgb, var(--bg-0) 78%, transparent);
+  display: flex; align-items: center; justify-content: center; z-index: 10;
+}
+.modal {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 1.2em 1.4em; max-width: 480px; width: 90%;
+}
+.modal h3 { margin-top: 0; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.6em; margin-top: 1em; }
+.modal-actions button {
+  font: inherit; padding: 0.45em 1em; border-radius: 5px; border: 1px solid var(--border);
+  background: var(--code-bg); color: var(--text-h); cursor: pointer;
+}
+.modal-actions button.primary { background: var(--ok); border-color: var(--ok); color: var(--on-accent); }
+
+/* ---------------------------------------------------------------- G15 Phase A */
+
+/* Space Grotesk applied to headings/labels per the adopted palette; body
+   copy keeps the existing --sans stack via --body-font as an available
+   token for new components (not force-applied to <body>, so existing
+   non-tree components keep their current look exactly as before). */
+h1, h2, h3, .source-panel h3, .tree-toggle, .target-zone strong {
+  font-family: var(--heading-font);
+}
+
+.type-glyph {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.3em; height: 1.3em; border-radius: 4px; font-size: 0.85em;
+  font-family: var(--body-font); flex-shrink: 0;
+}
+.type-glyph-table { color: var(--glyph-table); background: color-mix(in srgb, var(--glyph-table) 15%, transparent); }
+.type-glyph-view { color: var(--violet); background: color-mix(in srgb, var(--violet) 15%, transparent); }
+.type-glyph-routine { color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); }
+
+.tree-caret-btn {
+  background: none; border: none; padding: 0 0.2em; cursor: pointer; color: inherit;
+  display: inline-flex; align-items: center;
+}
+
+.table-row-with-columns { margin: 0.1em 0; }
+.columns-list { margin-left: 1.9em; padding: 0.2em 0 0.4em; display: flex; flex-direction: column; gap: 0.15em; }
+.column-row {
+  display: flex; align-items: center; gap: 0.5em; font-size: 0.82em; padding: 0.1em 0;
+}
+.column-name { opacity: 0.85; }
+.column-type-badge {
+  font-size: 0.75em; padding: 0.08em 0.5em; border-radius: 999px;
+  border: 1px solid var(--violet-soft); color: var(--violet-soft);
+  background: color-mix(in srgb, var(--violet) 10%, transparent);
+}
+.column-loading { padding: 0.2em 0 0.2em 1.9em; }
+
+/* Vertical + horizontal scroll for wide/long source-side preview tables
+   (RedshiftTree/StarburstTree/DatabricksTree all wrap their `run-table`
+   the same way now). Header row sticky since it's a plain CSS addition,
+   not a rewrite of the table markup. */
+.run-table-scroll {
+  max-height: 60vh; overflow: auto; border: 1px solid var(--border); border-radius: 6px;
+}
+/* G17 Stage 1: MigrationCard's in-card preview uses `.preview-table`, not
+   `.run-table`, so it needs the same sticky header inside the wrapper. */
+.run-table-scroll .run-table th,
+.run-table-scroll .preview-table th {
+  position: sticky; top: 0; background: var(--bg); z-index: 1;
+}
+
+.source-view-panel { margin-top: 0.4em; }
+.source-code-block { max-height: 50vh; }
+
+/* Pipeline-flow status strip — horizontal 3-node flow modeled on the
+   "LAKEBRIDGE AI" mockup, purely presentational over existing Job state. */
+.pipeline-flow {
+  display: flex; align-items: center; gap: 0.3em; margin: 0.5em 0 0.7em; flex-wrap: wrap;
+}
+.pipeline-flow-node { display: flex; align-items: center; gap: 0.3em; }
+.pipeline-flow-connector {
+  width: 1.6em; height: 2px; background: linear-gradient(90deg, var(--violet-soft), var(--amber-soft));
+  opacity: 0.5;
+}
+.pipeline-stage {
+  display: flex; align-items: center; gap: 0.4em; padding: 0.2em 0.6em;
+  border-radius: 999px; border: 1px solid var(--border); font-size: 0.75em;
+  font-family: var(--body-font);
+}
+.pipeline-stage-dot { width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--queued); flex-shrink: 0; }
+.pipeline-stage-label { font-weight: 500; }
+.pipeline-stage-status { opacity: 0.7; text-transform: capitalize; }
+.pipeline-stage-not-started .pipeline-stage-dot { background: var(--queued); }
+.pipeline-stage-in-progress { border-color: var(--amber); }
+.pipeline-stage-in-progress .pipeline-stage-dot { background: var(--amber); }
+.pipeline-stage-done { border-color: var(--ok); }
+.pipeline-stage-done .pipeline-stage-dot { background: var(--ok); }
+.pipeline-stage-failed { border-color: var(--failed); }
+.pipeline-stage-failed .pipeline-stage-dot { background: var(--failed); }
+.pipeline-stage-skipped { opacity: 0.45; }
+.pipeline-stage-skipped .pipeline-stage-dot { background: var(--queued); }
+
+.migration-list { display: flex; flex-direction: column; gap: 0.8em; margin-bottom: 3em; }
+.migration-card {
+  border: 1px solid var(--border); border-left-width: 4px; border-radius: 6px;
+  padding: 0.8em 1em; background: var(--bg);
+}
+.migration-card.status-completed { border-left-color: var(--ok); }
+.migration-card.status-failed { border-left-color: var(--failed); }
+.migration-card.status-running, .migration-card.status-dispatching { border-left-color: var(--running); }
+.migration-card-head { display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.2em; flex-wrap: wrap; }
+.migration-card-engine { font-size: 0.78em; opacity: 0.65; margin-bottom: 0.5em; }
+.code-block {
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 5px;
+  padding: 0.7em 0.9em; max-height: 300px; overflow: auto; font-size: 0.82em; white-space: pre-wrap;
+}
+details summary { cursor: pointer; font-size: 0.85em; opacity: 0.75; margin: 0.3em 0; }
+
+/* G3.4 — batch/whole-schema migration UI */
+.batch-toolbar { display: flex; align-items: center; gap: 0.8em; margin-bottom: 1em; flex-wrap: wrap; }
+.batch-toolbar button {
+  padding: 0.4em 0.8em; border: 1px solid var(--border); border-radius: 5px;
+  background: var(--bg); color: var(--text); cursor: pointer;
+}
+.batch-toolbar button.active { background: var(--code-bg); border-color: var(--text-h); font-weight: 600; }
+.batch-toolbar button.primary { background: var(--ok); border-color: var(--ok); color: var(--on-accent); }
+.batch-toolbar button:disabled { opacity: 0.5; cursor: default; }
+
+.tree-toggle-row { display: flex; align-items: center; gap: 0.5em; }
+.batch-btn { font-size: 0.72em; }
+
+.checkbox-row { display: flex; align-items: center; gap: 0.5em; margin: 0.8em 0; font-size: 0.9em; }
+
+.batch-card {
+  border: 1px solid var(--border); border-left-width: 4px; border-radius: 6px;
+  padding: 0.8em 1em; background: var(--bg);
+}
+.batch-card.batch-status-completed { border-left-color: var(--ok); }
+.batch-card.batch-status-completed_with_errors { border-left-color: var(--failed); }
+.batch-card.batch-status-pending, .batch-card.batch-status-running { border-left-color: var(--running); }
+
+.batch-pill-completed { color: var(--ok); }
+.batch-pill-completed_with_errors { color: var(--failed); }
+.batch-pill-pending, .batch-pill-running { color: var(--running); }
+
+.engine-dot.batch-error { background: var(--failed); }
+
+.batch-progress-row { display: flex; align-items: center; gap: 0.7em; margin: 0.5em 0; }
+.batch-progress-bar {
+  flex: 1; height: 8px; border-radius: 4px; background: var(--code-bg);
+  border: 1px solid var(--border); overflow: hidden;
+}
+.batch-progress-fill { height: 100%; background: var(--ok); transition: width 0.3s ease; }
+.batch-progress-fill.has-errors { background: var(--failed); }
+
+.batch-item-list { display: flex; flex-direction: column; gap: 0.3em; margin-top: 0.4em; }
+.batch-item {
+  display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap;
+  padding: 0.3em 0.5em; border-radius: 4px; font-size: 0.85em;
+}
+.batch-item.status-failed { background: color-mix(in srgb, var(--failed) 12%, transparent); }
+.batch-item-error { color: var(--failed); font-size: 0.85em; }
+
+/* ---------------------------------------------------------------- G4 */
+
+.sub-note { margin: -0.5em 0 1.2em; }
+
+.history-list { display: flex; flex-direction: column; gap: 0.4em; margin-bottom: 3em; }
+.history-row {
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg);
+  overflow: hidden;
+}
+.history-row-summary {
+  font: inherit; width: 100%; display: flex; align-items: center; gap: 0.6em;
+  padding: 0.55em 0.8em; background: none; border: none; color: inherit;
+  cursor: pointer; text-align: left;
+}
+.history-row-summary:hover { background: var(--code-bg); }
+.history-row-desc { flex: 1; opacity: 0.85; font-size: 0.9em; }
+.history-row-time { white-space: nowrap; font-size: 0.78em; }
+.history-row-detail { padding: 0 1em 1em 2.4em; border-top: 1px dashed var(--border); }
+.history-detail-block { padding-top: 0.8em; }
+
+.kind-tag {
+  font-size: 0.68em; font-weight: 600; letter-spacing: 0.02em; padding: 0.15em 0.5em;
+  border-radius: 999px; text-transform: uppercase; border: 1px solid currentColor;
+}
+.kind-tag-run { color: var(--ok); }
+.kind-tag-migration { color: var(--running); }
+.kind-tag-batch { color: var(--databricks); }
+
+/* reconcile validation results — reconciliation_passed is deliberately NOT
+   red/error when false; a real mismatch is a successfully-completed run
+   that found real differences, not a technical failure. */
+.reconcile-view { margin-top: 1.4em; padding-top: 1em; border-top: 1px solid var(--border); }
+.reconcile-state { margin-top: 0.6em; }
+.reconcile-verdict { display: flex; align-items: center; gap: 0.8em; flex-wrap: wrap; margin-bottom: 0.8em; }
+.status-mismatch { color: var(--warn-text); }
+.reconcile-meta { margin: 0.15em 0; }
+.reconcile-metrics-table { border-collapse: collapse; margin-top: 0.8em; width: 100%; max-width: 560px; }
+.reconcile-metrics-table th {
+  text-align: left; font-weight: 500; opacity: 0.75; padding: 0.35em 0.8em 0.35em 0;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.reconcile-metrics-table td { padding: 0.35em 0; border-bottom: 1px solid var(--border); }
+.reconcile-running { display: flex; flex-direction: column; gap: 0.4em; align-items: flex-start; }
+
+/* G6 — chat panel */
+/* G16 Phase B — two-column layout (chat + right-hand data explorer),
+   widened from the original 760px single column so the sidebar doesn't
+   starve the chat column. .app's 1200px max-width already comfortably
+   fits chat(flex:1) + a ~320px sidebar; no change needed there. Collapses
+   to a single stacked column (sidebar becomes a togglable drawer below
+   chat, via ChatDataExplorer's own collapse toggle) under 880px. */
+.chat-panel { display: flex; flex-direction: row; align-items: flex-start; gap: 1.2em; max-width: 100%; }
+.chat-panel-main { display: flex; flex-direction: column; gap: 1em; flex: 1 1 auto; min-width: 0; }
+
+.chat-data-explorer {
+  flex: 0 0 320px; width: 320px; border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.8em 0.9em; max-height: 70vh; overflow-y: auto; background: var(--bg);
+}
+.chat-data-explorer.collapsed { max-height: none; overflow: visible; }
+.chat-data-explorer-head { display: flex; justify-content: flex-end; margin-bottom: 0.4em; }
+.chat-explorer-collapse-toggle {
+  font: inherit; font-size: 0.8em; background: none; border: none; color: var(--text);
+  opacity: 0.75; cursor: pointer; padding: 0.2em 0.3em;
+}
+.chat-explorer-collapse-toggle:hover { opacity: 1; text-decoration: underline; }
+.chat-explorer-switcher { margin-bottom: 0.8em; }
+
+@media (max-width: 880px) {
+  .chat-panel { flex-direction: column; }
+  .chat-data-explorer { width: 100%; flex-basis: auto; max-height: 60vh; }
+}
+
+/* G16 Phase B — Google-suggestion-style object chips near the chat input. */
+.object-chips-row { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; }
+.object-chip {
+  font: inherit; font-size: 0.8em; padding: 0.3em 0.8em; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--code-bg); color: var(--text-h); cursor: pointer;
+}
+.object-chip:hover { border-color: var(--text-h); }
+.object-chip:disabled { opacity: 0.5; cursor: default; }
+.object-chip-redshift { border-color: color-mix(in srgb, var(--redshift) 45%, transparent); }
+.object-chip-starburst { border-color: var(--violet-soft); }
+
+.chat-scroll {
+  display: flex; flex-direction: column; gap: 0.9em; min-height: 240px; max-height: 55vh;
+  overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 1em;
+}
+.chat-msg { max-width: 90%; }
+.chat-msg-user { align-self: flex-end; text-align: right; }
+.chat-msg-user p {
+  display: inline-block; background: var(--code-bg); border-radius: 8px; padding: 0.5em 0.8em; margin: 0;
+}
+.chat-plan-card {
+  border: 1px solid var(--border); border-left-width: 4px; border-left-color: var(--running);
+  border-radius: 6px; padding: 0.8em 1em; display: flex; flex-direction: column; gap: 0.4em;
+}
+.chat-input-row { display: flex; gap: 0.6em; }
+.chat-input-row input {
+  flex: 1; font: inherit; padding: 0.5em 0.8em; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text-h);
+}
+.chat-input-row button {
+  font: inherit; padding: 0.5em 1.2em; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--code-bg); color: var(--text-h); cursor: pointer;
+}
+.chat-input-row button:disabled { opacity: 0.5; cursor: default; }
+
+/* ==========================================================================
+   G17 component treatment. Appended last so these win over the pre-G17 rules
+   above at equal specificity. As components are fully migrated, their old
+   rules above should be deleted rather than left to be overridden.
+   ========================================================================== */
+
+/* ---------- Migrations surface ---------- */
+.explorer-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+@media (max-width: 1080px) { .explorer-grid { grid-template-columns: 1fr; } }
+
+.pipeline-hero { padding: 22px 24px; overflow: hidden; }
+.pipeline-hero-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; margin-bottom: 22px;
+}
+.pipeline-hero-title {
+  margin: 6px 0 0; font-size: 18px; font-weight: 600; color: var(--text-h);
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+}
+.pipeline-hero-title .icon { color: var(--faint); }
+.pipeline-hero-idle { margin: 0; color: var(--muted); font-size: 13.5px; }
+
+/* ---------- Pipeline flow (circular nodes, reference treatment) ---------- */
+.pipeline-flow {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  align-items: start; gap: 0; border: 0; padding: 0;
+}
+.pipeline-node {
+  position: relative; display: flex; flex-direction: column;
+  align-items: center; text-align: center; gap: 3px; padding: 0 6px;
+}
+.pipeline-ring {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--bg-1);
+  border: 1px solid color-mix(in srgb, var(--state) 45%, transparent);
+  color: var(--state);
+  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), border-color 0.4s;
+  z-index: 1;
+}
+.pipeline-flow-hero .pipeline-ring { width: 54px; height: 54px; margin-bottom: 12px; }
+.pipeline-flow-compact .pipeline-ring { width: 34px; height: 34px; margin-bottom: 7px; }
+.pipeline-ring-inner { display: flex; }
+.pipeline-in-progress {
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--running) 55%, transparent);
+  animation: ringPulse 2s infinite;
+}
+@keyframes ringPulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--running) 50%, transparent); }
+  70%  { box-shadow: 0 0 0 12px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.pipeline-done { box-shadow: 0 0 22px -6px color-mix(in srgb, var(--ok) 60%, transparent); }
+.pipeline-skipped { opacity: 0.45; }
+.pipeline-not-started { opacity: 0.6; }
+
+.pipeline-node-label {
+  font-family: var(--font-display); font-weight: 600; color: var(--text-h);
+}
+.pipeline-flow-hero .pipeline-node-label { font-size: 14.5px; }
+.pipeline-flow-compact .pipeline-node-label { font-size: 12.5px; }
+.pipeline-node-caption { font-size: 11px; color: var(--faint); }
+.pipeline-node-status {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--state); margin-top: 2px;
+}
+
+/* Connector runs behind the rings, from this node's centre to the next. */
+.pipeline-connector {
+  position: absolute; left: 50%; right: -50%; height: 2px;
+  background: var(--line-2); border-radius: 2px; z-index: 0;
+}
+.pipeline-flow-hero .pipeline-connector { top: 26px; }
+.pipeline-flow-compact .pipeline-connector { top: 16px; }
+.pipeline-connector.lit {
+  background: var(--grad);
+  box-shadow: 0 0 12px -2px color-mix(in srgb, var(--starburst) 55%, transparent);
+}
+
+/* ---------- Target drop zone ---------- */
+.target-zone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; text-align: center; min-height: 190px; padding: 26px 22px;
+  border: 1.5px dashed var(--line-2); border-radius: var(--r-panel);
+  background: color-mix(in srgb, var(--databricks) 4%, var(--bg-1));
+  color: var(--muted); font-size: 13px;
+  transition: border-color 0.3s, background 0.3s, transform 0.3s var(--ease);
+}
+.target-zone strong { color: var(--text-h); font-size: 15px; }
+.target-zone-icon { color: var(--databricks); display: flex; }
+.target-zone-hover {
+  border-color: var(--databricks);
+  background: color-mix(in srgb, var(--databricks) 12%, var(--bg-1));
+  transform: scale(1.01);
+  box-shadow: 0 0 40px -12px color-mix(in srgb, var(--databricks) 60%, transparent);
+}
+
+/* ---------- Batch toolbar ---------- */
+.batch-toolbar {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  padding: 20px 22px; margin: 0;
+}
+.batch-toolbar-head { margin-bottom: 2px; }
+.batch-toolbar-head p { margin: 5px 0 0; font-size: 12.5px; }
+.batch-toolbar button, .trigger-bar button, .back-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  padding: 8px 14px; border-radius: var(--r-control);
+  border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text);
+  cursor: pointer; transition: all 0.25s var(--ease);
+}
+.batch-toolbar button:hover, .trigger-bar button:hover:not(:disabled), .back-btn:hover {
+  border-color: color-mix(in srgb, var(--starburst) 50%, transparent);
+  background: var(--bg-3); color: var(--text-h); transform: translateY(-1px);
+}
+.batch-toolbar button.active { border-color: var(--starburst); color: var(--text-h); }
+.batch-toolbar button.primary, .modal-actions button.primary {
+  background: var(--grad); border-color: transparent; color: var(--on-accent); font-weight: 600;
+}
+.batch-toolbar button.primary:disabled { opacity: 0.45; cursor: default; transform: none; }
+.trigger-bar { gap: 10px; }
+
+/* ---------- Chat ---------- */
+.chat-panel { display: block; max-width: 100%; }
+.chat-panel-main {
+  display: flex; flex-direction: column; gap: 14px;
+  max-width: 900px; margin: 0 auto;
+}
+.chat-scroll { min-height: 320px; }
+.chat-hero { text-align: center; padding: 48px 20px 30px; }
+.chat-hero-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 64px; height: 64px; border-radius: 18px; margin-bottom: 20px;
+  background: var(--grad); color: var(--on-accent);
+  box-shadow: 0 18px 44px -16px color-mix(in srgb, var(--starburst) 70%, transparent);
+}
+.chat-hero-title {
+  margin: 0 0 10px; font-size: clamp(24px, 3vw, 32px); font-weight: 700;
+  background: var(--grad); -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.chat-hero-lede {
+  margin: 0 auto; max-width: 54ch; color: var(--muted); font-size: 14px; line-height: 1.65;
+}
+.chat-hero-lede em { color: var(--text); font-style: normal; font-family: var(--font-mono); font-size: 0.92em; }
+
+.chat-input-row { display: flex; gap: 10px; align-items: stretch; }
+.chat-input-row input {
+  flex: 1; font-family: var(--font-body); font-size: 14px;
+  padding: 13px 16px; border-radius: 14px;
+  border: 1px solid var(--line-2); background: var(--bg-1); color: var(--text);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.chat-input-row input::placeholder { color: var(--faint); }
+.chat-input-row input:focus {
+  outline: none; border-color: var(--starburst);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--starburst) 18%, transparent);
+}
+.chat-input-row button {
+  display: flex; align-items: center; justify-content: center;
+  width: 48px; border: 0; border-radius: 14px;
+  background: var(--grad); color: var(--on-accent); cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  transition: opacity 0.25s, transform 0.25s var(--ease);
+}
+.chat-input-row button:disabled { opacity: 0.4; cursor: default; }
+.chat-input-row button:not(:disabled):hover { transform: translateY(-1px); }
+
+/* ---------- Object chips ---------- */
+/* G19: with tables + routines from both systems the strip grew to ~207px and
+   pushed the chat input off the bottom of a 720px-tall window. Cap it and let
+   it scroll instead — the input must always stay on screen. */
+.object-chips-row {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  max-height: 5.5em; overflow-y: auto; flex: 0 0 auto;
+  padding-right: 2px;
+}
+.object-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-body); font-size: 12.5px; font-weight: 500;
+  padding: 7px 14px; border-radius: var(--r-pill);
+  /* The system accent drives the resting border too, so a Redshift chip reads
+     as Redshift before you hover it (design-system: one colour per system). */
+  border: 1px solid color-mix(in srgb, var(--sys, var(--line-2)) 34%, transparent);
+  background: var(--bg-1); color: var(--text);
+  cursor: pointer; transition: all 0.25s var(--ease);
+}
+.object-chip::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--sys, var(--muted)); flex-shrink: 0;
+}
+.object-chip:hover:not(:disabled) {
+  transform: translateY(-2px); color: var(--text-h);
+  border-color: color-mix(in srgb, var(--sys, var(--starburst)) 60%, transparent);
+  background: color-mix(in srgb, var(--sys, var(--starburst)) 10%, var(--bg-1));
+}
+.object-chip:disabled { opacity: 0.45; cursor: default; }
+.object-chip-redshift { --sys: var(--redshift); }
+.object-chip-starburst { --sys: var(--starburst); }
+.object-chip-databricks { --sys: var(--databricks); }
+
+/* ---------- Cards ---------- */
+.migration-list { display: flex; flex-direction: column; gap: 12px; }
+.migration-card, .batch-card, .chat-plan-card, .history-row, .reconcile-view, .preview-panel {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--r-card); padding: 16px 18px;
+}
+.chat-plan-card { background: var(--bg-1); }
+.code-block, .source-code-block, .log-view {
+  background: var(--bg-1); border: 1px solid var(--line);
+  border-radius: 12px; font-family: var(--font-mono); font-size: 12.5px;
+  color: var(--text);
+}
+.modal { background: var(--bg-1); border: 1px solid var(--line-2); border-radius: var(--r-panel); }
+.modal-backdrop { background: color-mix(in srgb, var(--bg-0) 78%, transparent); backdrop-filter: blur(4px); }
+.context-menu {
+  background: var(--bg-1); border: 1px solid var(--line-2);
+  border-radius: 12px; box-shadow: var(--shadow-lg);
+}
+.callout-warn, .error {
+  background: color-mix(in srgb, var(--running) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--running) 32%, transparent);
+  color: var(--text); border-radius: 12px;
+}
+.error {
+  background: color-mix(in srgb, var(--failed) 10%, transparent);
+  border-color: color-mix(in srgb, var(--failed) 32%, transparent);
+}
+.batch-item.status-failed { background: color-mix(in srgb, var(--failed) 12%, transparent); }
+.kind-tag-batch { color: var(--databricks); }
+.engine-dot.data { background: var(--databricks); }
+
+/* ---------- Tables ---------- */
+.run-table th, .preview-table th {
+  font-family: var(--font-body); font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);
+  border-bottom: 1px solid var(--line); opacity: 1;
+}
+.run-table td, .preview-table td {
+  border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums;
+}
+.run-row:hover { background: var(--bg-2); }
+.run-table-scroll {
+  border: 1px solid var(--line); border-radius: 12px; background: var(--bg-1);
+}
+.run-table-scroll .run-table th, .run-table-scroll .preview-table th {
+  background: var(--bg-1);
+}
+
+/* ---------- Trees ---------- */
+.tree-leaf-row:hover { background: color-mix(in srgb, var(--text) 5%, transparent); border-radius: 8px; }
+.type-glyph-table { color: var(--databricks); }
+.type-glyph-view { color: var(--starburst); }
+.type-glyph-routine { color: var(--redshift); }
+.column-type-badge {
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--starburst-soft);
+  background: color-mix(in srgb, var(--starburst) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--starburst) 22%, transparent);
+  border-radius: 5px; padding: 1px 6px;
+}
+.mini-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-body); font-size: 11.5px;
+  padding: 4px 9px; border-radius: 7px;
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  cursor: pointer; transition: all 0.2s;
+}
+.mini-btn:hover { color: var(--text-h); border-color: var(--line-2); background: var(--bg-2); }
+
+/* ---------- Tree density inside the 320px data panel ----------
+   The trees were authored for a wide 3-column layout; in the sidebar their
+   controls overflow. These rules only apply inside the panel, so the same
+   components stay roomy wherever else they render. */
+.data-panel .source-panel { font-size: 13px; }
+
+/* G19: these two rows used to wrap, which is what pushed "migrate" / "copy
+   data" / the eye button onto separate lines, and dropped "batch migrate
+   schema" underneath its own schema. They now stay on one line: the name
+   truncates with an ellipsis (it has a title/tooltip) and the action buttons
+   never shrink, so every control on a row stays reachable at panel width. */
+.data-panel .tree-toggle-row,
+.data-panel .tree-leaf-row { flex-wrap: nowrap; min-width: 0; }
+.data-panel .tree-leaf-row > .mini-btn,
+.data-panel .tree-toggle-row > .mini-btn,
+.data-panel .tree-toggle-row > .batch-btn { flex-shrink: 0; }
+.data-panel .tree-leaf,
+.data-panel .tree-toggle { min-width: 0; }
+/* G19: names are no longer truncated with an ellipsis — the panel scrolls
+   horizontally instead, so the full name is always reachable (and the hover
+   tip shows it without scrolling). */
+.data-panel .tree-leaf-label,
+.data-panel .tree-toggle { white-space: nowrap; }
+/* The schema row's batch action sits at the far right of its line, offset from
+   the schema name + refresh control rather than stacked under them. */
+.data-panel .tree-toggle-row > .batch-btn { margin-left: auto; }
+.data-panel .tree-toggle {
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--text);
+}
+.data-panel .tree-children {
+  margin-left: 0.7em; padding-left: 0.6em;
+  border-left: 1px solid var(--line);
+}
+.data-panel .batch-btn {
+  font-size: 10px; padding: 2px 7px; border-radius: 6px;
+  border: 1px solid var(--line); background: transparent; color: var(--faint);
+}
+.data-panel .batch-btn:hover { color: var(--text); border-color: var(--line-2); }
+.data-panel .mini-btn { font-size: 10.5px; padding: 3px 7px; }
+.data-panel .tree-leaf-label { font-family: var(--font-mono); font-size: 12.5px; }
+.data-panel .tree-leaf-sub {
+  font-size: 9px; letter-spacing: 0.08em; color: var(--faint);
+}
+.data-panel .column-row { font-size: 11.5px; }
+/* The Redshift "databases: …" line is context, not content. */
+.data-panel .source-panel > p,
+.data-panel .sub-note { font-size: 11px; color: var(--faint); line-height: 1.45; }
+/* Preview/source panels inside the sidebar must not force it wider. */
+.data-panel .preview-panel,
+.data-panel .source-view-panel { max-width: 100%; overflow: hidden; }
+.data-panel .run-table-scroll { max-height: 40vh; }
+
+/* ---------- Section headings ---------- */
+.explorer h2, .chat-panel h2, .history-list h2 { font-size: 15px; }
+
+/* ---------- Topbar collision fix ----------
+   The status pill and the title are both intrinsically sized, so at narrow
+   widths they collided rather than wrapping. */
+.topbar { flex-wrap: wrap; row-gap: 10px; }
+.topbar > .pill { flex-shrink: 0; }
+.topbar-titles { flex: 1 1 320px; }
+
+/* G18 — the panel-sizing rules that used to live here are obsolete: the data
+   explorer is no longer a shell column, so its responsive behaviour is owned
+   by the .explorer rules near the top of this file. Keeping them here made
+   them win by source order and stopped the stacked panel going full width. */
+@media (max-width: 900px) {
+  .topbar h1 { font-size: 19px; }
+}
+
+/* ---------- History rows ----------
+   The summary row is intrinsically wide (kind tag + id + object name + status
+   + timestamp) and was clipping its status pill at narrower widths. */
+.history-row-summary { flex-wrap: wrap; row-gap: 6px; }
+.history-row-desc { min-width: 0; word-break: break-word; }
+.history-row-time { color: var(--faint); }
+.kind-tag {
+  font-family: var(--font-body); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, currentColor 34%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* ---------- Legacy status pills ----------
+   RunList/RunDetail/ChatPanel still render statusMeta.ts's `.status-pill`.
+   Bring it onto the same visual language as the new `.pill` primitive rather
+   than leaving two different-looking status treatments in one app. */
+.status-pill {
+  gap: 6px; padding: 4px 11px; border-radius: var(--r-pill);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, currentColor 34%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* Batch pills use the same treatment. */
+.batch-card .status-pill,
+[class*="batch-pill-"] {
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, currentColor 34%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* ---------- Run table at narrow widths ---------- */
+.run-table { min-width: 520px; }
+
+/* ---------- Unity Catalog section ---------- */
+.uc-view { display: flex; flex-direction: column; gap: 16px; max-width: 760px; }
+.uc-card { padding: 22px 24px; }
+.uc-card-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.uc-tile { color: var(--databricks); }
+.uc-title { margin: 4px 0 0; font-size: 18px; font-weight: 600; color: var(--text-h); }
+.uc-reveal {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 16px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  padding: 9px 15px; border-radius: var(--r-control);
+  border: 1px solid color-mix(in srgb, var(--databricks) 45%, transparent);
+  background: color-mix(in srgb, var(--databricks) 10%, transparent);
+  color: var(--text-h); cursor: pointer; transition: all 0.25s var(--ease);
+}
+.uc-reveal:hover {
+  background: color-mix(in srgb, var(--databricks) 20%, transparent);
+  transform: translateY(-1px);
+}
+.uc-catalog-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.uc-catalog-list li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px; font-size: 13px;
+}
+.uc-catalog-list li:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.uc-catalog-list li.is-target { background: color-mix(in srgb, var(--databricks) 8%, transparent); }
+
+/* ============================================================
+   G18 — history filters + chat progress
+   Appended block. Everything here uses tokens only (no literal
+   colours) and every animation is switched off under
+   prefers-reduced-motion at the end of this block.
+   ============================================================ */
+
+/* ---------- History filters ----------
+   These deliberately do NOT reuse `.batch-toolbar`: that class is redefined
+   above as a vertical stack for the Migrations batch card, which is what made
+   the Logs filters render as a column. Own class, own intent. */
+.history-filters {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+}
+.history-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--muted);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.25s var(--ease);
+}
+.history-filter-count {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.history-filter-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.history-filter:hover {
+  transform: translateY(-2px);
+  background: var(--bg-3);
+  border-color: color-mix(in srgb, var(--starburst) 50%, transparent);
+  color: var(--text);
+}
+.history-filter.active {
+  border-color: color-mix(in srgb, var(--starburst) 60%, transparent);
+  background: color-mix(in srgb, var(--starburst) 12%, var(--bg-2));
+  color: var(--text-h);
+}
+.history-filter.active .history-filter-count { color: var(--starburst-soft); }
+
+/* ---------- Chat working indicator ---------- */
+.chat-working {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--muted);
+}
+.chat-working-label { color: var(--text); }
+.chat-working-elapsed {
+  font-size: 12px;
+  color: var(--running);
+  font-variant-numeric: tabular-nums;
+}
+.chat-working-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.chat-working-dots > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--starburst-soft);
+  animation: chatWorkingDot 1.2s infinite var(--ease);
+}
+.chat-working-dots > span:nth-child(2) { animation-delay: 0.16s; }
+.chat-working-dots > span:nth-child(3) { animation-delay: 0.32s; }
+@keyframes chatWorkingDot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+.chat-pending-bubble {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 12px 18px;
+  position: relative;
+  overflow: hidden;
+}
+/* Shimmer sweep, so an in-flight plan reads as active even before the first
+   dot cycle completes. */
+.chat-pending-bubble::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--starburst) 10%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: chatShimmer 1.8s infinite;
+  pointer-events: none;
+}
+@keyframes chatShimmer {
+  to { transform: translateX(100%); }
+}
+.chat-pending-bubble .chat-working { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-working-dots > span {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .chat-pending-bubble::after {
+    animation: none;
+    display: none;
+  }
+  .history-filter:hover { transform: none; }
+}
+
+/* ---------- G18: Migrations page hosts the data explorer ---------- */
+.explorer { display: block; }
+.explorer-work { min-width: 0; }
+
+/* ---------- G19: data explorer inside the left rail ----------
+   It is a nav item under "Migrations" now, not a column on the Migrations
+   page. The rail widens to hold it while it is open and returns to its normal
+   width when collapsed, so the main content reclaims the space. */
+.shell-explorer-open { grid-template-columns: var(--rail-w-explorer) 1fr; }
+.shell, .shell-explorer-open { transition: grid-template-columns 0.28s var(--ease); }
+@media (prefers-reduced-motion: reduce) {
+  .shell, .shell-explorer-open { transition: none; }
+}
+
+.rail-group { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+/* Indented one step from its parent item, and visually tied to it by the rule
+   down the left edge — this is a child of Migrations, not a peer of it. */
+.rail-subitem {
+  margin-left: 10px;
+  width: calc(100% - 10px);
+  font-size: 12.5px;
+  gap: 8px;
+}
+.rail-caret { transition: transform 0.2s var(--ease); flex-shrink: 0; }
+.rail-caret.open { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .rail-caret { transition: none; } }
+
+.rail-explorer {
+  margin: 2px 0 6px 10px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+  min-width: 0;
+}
+/* Inside the rail the panel is not a floating card — it fills the rail's
+   width, drops its own border/sticky positioning, and scrolls in place. */
+.rail-explorer .data-panel {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  position: static;
+  max-height: min(58vh, 560px);
+}
+.rail-explorer .data-panel-head { padding-left: 0; padding-right: 0; }
+
+/* Busy spinner for icon-only controls (the chat send button is a fixed
+   48px square, so a text label overflowed it). */
+@keyframes iconSpin { to { transform: rotate(360deg); } }
+.icon.spin { animation: iconSpin 0.9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .icon.spin { animation: none; opacity: 0.6; } }
+
+/* ---------- G18: routine chips + in-transcript routine source ----------
+   Routine chips are visually distinct from table chips: they drop the system
+   status dot in favour of a boxed function glyph carrying the routine accent
+   (.type-glyph-routine, already defined above as var(--redshift)), and use a
+   dashed border to read as "inspect", not "migrate". Colours are tokens only. */
+.object-chip-routine::before { display: none; }
+.object-chip-routine {
+  border-style: dashed;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.object-chip-glyph {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  background: color-mix(in srgb, var(--redshift) 15%, transparent);
+}
+
+.chat-source-card {
+  background: var(--bg-1); border: 1px solid var(--line);
+  border-radius: var(--r-card); padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.chat-source-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chat-source-head strong { font-family: var(--font-display); letter-spacing: -0.02em; }
+.chat-source-card .source-code-block {
+  margin: 0; padding: 12px 14px; overflow: auto; white-space: pre;
+}
+
+/* ---------- G19: centre-pane preview ----------
+   Replaces the previews that used to render inside each tree. Those were fine
+   when the explorer was a wide column; once it moved into the 372px rail a
+   data grid there meant a nested horizontal scrollbar and truncated values.
+   This is the same information given room to breathe. */
+.preview-pane {
+  padding: 18px 20px 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--line-2);
+  /* Reads as a distinct surface rather than another content card — it is a
+     transient view the user opened, not part of the page. */
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--starburst) 6%, transparent), transparent 120px),
+    var(--bg-1);
+}
+.pv-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.pv-head .sys-dot { flex-shrink: 0; }
+.pv-head-titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pv-title {
+  margin: 0; font-size: 16px; font-weight: 600; color: var(--text-h);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pv-type { flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.06em; font-size: 10.5px; }
+.pv-close {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: var(--r-control);
+  border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.pv-close:hover { color: var(--text-h); border-color: var(--line-2); background: var(--bg-2); }
+
+.pv-section { border-top: 1px solid var(--line); }
+.pv-section:first-of-type { border-top: 0; }
+.pv-section-head {
+  width: 100%; display: flex; align-items: center; gap: 9px;
+  padding: 11px 2px; border: 0; background: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; color: var(--muted); text-align: left;
+  transition: color 0.2s;
+}
+.pv-section-head:hover { color: var(--text-h); }
+.pv-section.open .pv-section-head { color: var(--text-h); }
+.pv-section-title { font-weight: 600; }
+.pv-section-meta {
+  font-size: 11.5px; color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.pv-caret { transition: transform 0.22s var(--ease); flex-shrink: 0; }
+.pv-caret.open { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .pv-caret { transition: none; } }
+.pv-section-body { padding-bottom: 14px; }
+
+/* Both scrollbars live here, on the table's own wrapper — never on the page. */
+.pv-scroll {
+  max-height: 46vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--bg-0);
+}
+.pv-scroll-code { max-height: 52vh; }
+.pv-scroll-code .code-block { margin: 0; border: 0; background: none; }
+.pv-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
+.pv-table th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--bg-2); color: var(--faint);
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600;
+  text-align: left; padding: 9px 14px; white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+.pv-table td {
+  padding: 8px 14px; font-size: 12.5px; white-space: nowrap;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.pv-table tbody tr:last-child td { border-bottom: 0; }
+.pv-table tbody tr:hover td { background: color-mix(in srgb, var(--text) 4%, transparent); }
+.pv-null { color: var(--faint); font-style: italic; }
+
+/* G19 — instant hover tip for explorer rows. `position: fixed` so it is not
+   clipped by the panel's (now two-axis) scroll container, and no transition or
+   delay: the user asked for it to appear immediately, which the native `title`
+   attribute cannot do. */
+.hover-tip {
+  position: fixed;
+  z-index: 60;
+  max-width: 460px;
+  padding: 5px 9px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--text-h);
+  font-size: 11.5px;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}
+
+/* G19 — chat card fold control.
+   It was an unstyled <button>, so it rendered as a full-width native control
+   (white block in dark mode) that looked nothing like the rest of the UI. It
+   should read like the `▾ Output` disclosure inside the same card: a small,
+   quiet, left-aligned caret + label. */
+.chat-plan-fold {
+  display: inline-flex; align-items: center; gap: 6px;
+  /* The card is a flex column with stretched items, so inline-flex alone still
+     spanned the full width — this is what keeps it a small control. */
+  align-self: flex-start; width: fit-content;
+  margin-top: 10px; padding: 4px 2px;
+  border: 0; background: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  color: var(--faint);
+  transition: color 0.2s;
+}
+.chat-plan-fold:hover { color: var(--text-h); }
+.chat-plan-summary { margin: 2px 0 0; font-size: 12.5px; }
+
+/* ---------- G19: explorer row interaction ----------
+   Two problems reported: the caret was too small to hit reliably, and the
+   grab cursor on the whole row implied "drag only" so clicking felt dead.
+   Now: the caret is a comfortable target that expands/collapses, and the row
+   body is a normal pointer that opens the preview. Dragging still works —
+   HTML5 drag suppresses the click when a drag actually happens, so the two
+   do not fight. */
+.data-panel .tree-caret-btn {
+  padding: 4px 5px;
+  margin: -4px -1px -4px -3px;   /* grows the hit area without moving the glyph */
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.data-panel .tree-caret-btn:hover { background: color-mix(in srgb, var(--text) 12%, transparent); }
+.data-panel .tree-leaf { cursor: pointer; }
+.data-panel .tree-leaf:active { cursor: grabbing; }
+
+/* The data section shows ~5 rows; the rest scroll. Keeps the preview compact
+   enough to sit alongside everything else in the centre pane. */
+.pv-scroll-rows { max-height: 232px; }
+
+/* ---------- G19: batch-select checkboxes ----------
+   These were raw platform checkboxes — grey, square, and visibly foreign
+   against everything else. Restyled with accent-color plus sizing/alignment so
+   they read as part of the design system, while staying real <input
+   type="checkbox"> elements (keyboard and screen-reader behaviour unchanged;
+   a div-with-a-tick would have thrown that away). */
+.data-panel input[type="checkbox"],
+.checkbox-row input[type="checkbox"] {
+  appearance: none;
+  width: 15px; height: 15px; flex-shrink: 0; margin: 0;
+  border: 1.5px solid var(--line-2);
+  border-radius: 4px;
+  background: var(--bg-0);
+  cursor: pointer;
+  display: inline-grid; place-content: center;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+.data-panel input[type="checkbox"]:hover,
+.checkbox-row input[type="checkbox"]:hover { border-color: var(--starburst); }
+.data-panel input[type="checkbox"]::before,
+.checkbox-row input[type="checkbox"]::before {
+  content: ""; width: 8px; height: 8px;
+  transform: scale(0); transition: transform 0.14s var(--ease);
+  background: var(--on-accent);
+  clip-path: polygon(14% 47%, 0 60%, 39% 100%, 100% 22%, 86% 9%, 38% 71%);
+}
+.data-panel input[type="checkbox"]:checked,
+.checkbox-row input[type="checkbox"]:checked {
+  background: var(--grad); border-color: transparent;
+}
+.data-panel input[type="checkbox"]:checked::before,
+.checkbox-row input[type="checkbox"]:checked::before { transform: scale(1); }
+.data-panel input[type="checkbox"]:focus-visible,
+.checkbox-row input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--starburst); outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .data-panel input[type="checkbox"],
+  .data-panel input[type="checkbox"]::before { transition: none; }
+}
+
+/* G19 — per-card fold control in the migration session list. Sits at the far
+   right of the card header, styled like the other quiet disclosures. */
+.card-fold {
+  margin-left: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: var(--r-control);
+  border: 1px solid transparent; background: none; color: var(--faint);
+  cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.card-fold:hover { color: var(--text-h); border-color: var(--line); background: var(--bg-2); }
+
+/* G19 — neutral informational callout (distinct from .callout-warn, which
+   means something went wrong; "already migrated" is a normal outcome). */
+.callout-info {
+  margin: 10px 0; padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--databricks) 34%, transparent);
+  border-radius: var(--r-control);
+  background: color-mix(in srgb, var(--databricks) 9%, transparent);
+  color: var(--text); font-size: 12.5px;
+}
+
+/* ---------- AI Command: plan card ----------
+   The plan card had drifted behind the rest of the console: a bold "Plan:"
+   run-in, two grey paragraphs, and an unclassed <button> that rendered as the
+   browser default. It is the one moment in this app where a human authorises a
+   real write, so it should read as a decision, not as a log line. Same
+   vocabulary as the migration cards — eyebrow, card, gradient primary. */
+.chat-plan-card {
+  display: flex; flex-direction: column; gap: 12px;
+  border-color: var(--line-2);
+}
+.chat-plan-head { display: flex; flex-direction: column; gap: 5px; }
+.chat-plan-title {
+  margin: 0; font-family: var(--font-body); font-size: 15px;
+  font-weight: 600; line-height: 1.35; color: var(--text-h);
+  text-wrap: balance;
+}
+.chat-plan-why { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+/* The endpoint is the literal thing that will run — give it the same treatment
+   as any other code in the app rather than dimming it into a caption. */
+.chat-plan-endpoint {
+  margin: 0; align-self: flex-start; max-width: 100%;
+  padding: 7px 11px; border-radius: 10px;
+  background: var(--bg-1); border: 1px solid var(--line);
+  color: var(--muted); font-size: 12px;
+  overflow-x: auto; white-space: pre;
+}
+.chat-plan-confirm {
+  align-self: flex-start; margin-top: 2px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 18px; border: 0; border-radius: var(--r-pill);
+  background: var(--grad); color: var(--on-accent);
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: transform 0.25s var(--ease), opacity 0.25s;
+}
+.chat-plan-confirm:hover { transform: translateY(-1px); }
+.chat-plan-confirm:focus-visible { outline: 2px solid var(--text-h); outline-offset: 2px; }
+.chat-plan-card.folded { gap: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .chat-plan-confirm { transition: none; }
+  .chat-plan-confirm:hover { transform: none; }
+}
+
+/* ---------- Chip loading placeholders ----------
+   The chip strip is gated on live row-checks against Redshift and Starburst
+   (~2-2.5s each). It previously rendered nothing while waiting, which reads as
+   "the chips are broken" rather than "the chips are coming". */
+.chip-skeleton {
+  display: inline-block; height: 31px; border-radius: var(--r-pill);
+  background: linear-gradient(
+    90deg,
+    var(--bg-1) 0%,
+    color-mix(in srgb, var(--text) 7%, var(--bg-1)) 50%,
+    var(--bg-1) 100%);
+  background-size: 200% 100%;
+  border: 1px solid var(--line);
+  animation: chip-shimmer 1.4s var(--ease) infinite;
+}
+.chip-loading-note { font-size: 12px; align-self: center; }
+@keyframes chip-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chip-skeleton { animation: none; }
+}

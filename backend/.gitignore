@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.pytest_cache/
+_transpile_out/
+_data/
+_analyze_out/
+.env

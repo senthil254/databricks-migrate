@@ -1,0 +1,30 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Run artifacts and generated output
+out/
+logs/
+data/
+_data/
+_transpile_out/
+_analyze_out/
+*.log
+*.jsonl
+
+# Local agent/editor state
+.claude/
+.DS_Store
