@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lakebridge Migration Console — Architecture diagrams</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#111; --mut:#555; --line:#e3e3e3; --card:#fafafa; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#0d1117; --fg:#e6edf3; --mut:#9198a1; --line:#30363d; --card:#161b22; } }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+  .wrap{max-width:1200px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--mut);margin:0 0 28px}
+  nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+  nav a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);
+    border-radius:100px;padding:5px 12px;background:var(--card)}
+  nav a:hover{border-color:var(--mut)}
+  section{margin:0 0 48px}
+  h2{font-size:19px;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  pre.mermaid{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:20px;overflow-x:auto;margin:0 0 16px;text-align:center}
+  footer{color:var(--mut);font-size:13px;border-top:1px solid var(--line);padding-top:20px}
+  .note{background:var(--card);border:1px solid var(--line);border-left:3px solid #f0a;
+    border-radius:8px;padding:12px 16px;font-size:14px;color:var(--mut);margin-bottom:28px}
+</style></head><body><div class="wrap">
+<h1>Architecture diagrams</h1>
+<p class="sub">Lakebridge Migration Console — generated from <code>docs/ARCHITECTURE.md</code>.</p>
+<div class="note">Diagrams are derived from the code, not from design intent. If one disagrees with
+the code, the code changed and the diagram is a bug. This page loads Mermaid from a CDN; the
+Markdown source renders offline on GitHub.</div>
+<nav><a href="#s0">1. Process map — system context</a>
+<a href="#s1">2. Component diagram (UML)</a>
+<a href="#s2">3. The three-language CLI chain</a>
+<a href="#s3">4. Flowchart — migration engine decision tree</a>
+<a href="#s4">5. Data flow diagram — level 0</a>
+<a href="#s5">6. Data flow diagram — level 1 (migrate)</a>
+<a href="#s6">7. Sequence — drag-and-drop migration</a>
+<a href="#s7">8. Sequence — whole-schema batch</a>
+<a href="#s8">9. Sequence — AI Command (plan→confirm→execute)</a>
+<a href="#s9">10. Sequence — reconcile (dispatch vs completion)</a>
+<a href="#s10">11. ER diagram — SQLite</a>
+<a href="#s11">12. Class diagram (UML)</a>
+<a href="#s12">13. State diagrams</a>
+<a href="#s13">14. Block diagram — runtime topology</a>
+<a href="#s14">15. Polling map</a></nav>
+<section id="s0"><h2>1. Process map — system context</h2>
+<pre class="mermaid">flowchart LR
+    user([Operator])
+
+    subgraph app[&quot;Lakebridge Migration Console&quot;]
+        ui[&quot;React UI&lt;br/&gt;:5173&quot;]
+        api[&quot;FastAPI adapter&lt;br/&gt;:8811&quot;]
+        db[(&quot;SQLite&lt;br/&gt;runs.db&quot;)]
+        ui --&gt;|&quot;HTTP · 48 endpoints&quot;| api
+        api --- db
+    end
+
+    subgraph sources[&quot;Sources — READ ONLY&quot;]
+        rs[(&quot;Amazon Redshift&quot;)]
+        sb[(&quot;Starburst / Trino&quot;)]
+    end
+
+    subgraph target[&quot;Target — READ + WRITE&quot;]
+        dbx[(&quot;Databricks&lt;br/&gt;SQL Warehouse + Unity Catalog&quot;)]
+    end
+
+    subgraph tools[&quot;Tool chain&quot;]
+        cli[&quot;Databricks CLI → Lakebridge → Morpheus JVM&quot;]
+    end
+
+    user --&gt;|&quot;drag · click · natural language&quot;| ui
+    api --&gt;|&quot;metadata · DDL · rows&quot;| rs
+    api --&gt;|&quot;metadata · DDL · rows&quot;| sb
+    api --&gt;|&quot;CREATE / INSERT / SELECT&quot;| dbx
+    api --&gt;|&quot;argv array, never a shell&quot;| cli
+    cli --&gt;|&quot;transpiled SQL · job runs&quot;| dbx
+
+    classDef ro fill:#fff3e0,stroke:#e65100,color:#000
+    classDef rw fill:#e0f7fa,stroke:#006064,color:#000
+    class rs,sb ro
+    class dbx rw</pre>
+</section>
+<section id="s1"><h2>2. Component diagram (UML)</h2>
+<pre class="mermaid">flowchart TB
+    subgraph FE[&quot;Frontend — TypeScript / React 19&quot;]
+        direction TB
+        App[&quot;App.tsx&lt;br/&gt;5 always-mounted sections&quot;]
+        subgraph ctx[&quot;Context providers&quot;]
+            MA[&quot;MigrationActionsProvider&lt;br/&gt;jobs · batches · selection · targetVersion&quot;]
+            PV[&quot;PreviewProvider&quot;]
+        end
+        subgraph trees[&quot;Data explorer&quot;]
+            RT[&quot;RedshiftTree&quot;]
+            ST[&quot;StarburstTree&quot;]
+            DT[&quot;DatabricksTree&lt;br/&gt;(read-only)&quot;]
+        end
+        subgraph cards[&quot;Result surfaces&quot;]
+            MC[&quot;MigrationCard&quot;]
+            BC[&quot;BatchCard&quot;]
+            CP[&quot;ChatPanel&quot;]
+        end
+        apis[&quot;api.ts · explorerApi.ts&lt;br/&gt;batchApi.ts · chatApi.ts · historyApi.ts&quot;]
+        App --&gt; ctx --&gt; trees
+        App --&gt; cards
+        trees --&gt; apis
+        cards --&gt; apis
+    end
+
+    subgraph BE[&quot;Backend — Python 3.12 / FastAPI&quot;]
+        direction TB
+        main[&quot;main.py&lt;br/&gt;48 routes&quot;]
+        chat[&quot;chat.py&lt;br/&gt;4 interpretation methods&quot;]
+        llm[&quot;llm_planner.py&quot;]
+        migrate[&quot;migrate.py&lt;br/&gt;engine selection&quot;]
+        exec[&quot;executor.py&lt;br/&gt;argv allowlist · subprocess&quot;]
+        tgt[&quot;databricks_target.py&lt;br/&gt;shared conn · type map&quot;]
+        xlate[&quot;starburst_ddl_translator.py&quot;]
+        conn[&quot;connectors/&lt;br/&gt;redshift · starburst · databricks_browse&quot;]
+        redact[&quot;redact.py&quot;]
+        models[&quot;models.py&lt;br/&gt;3 stores&quot;]
+
+        main --&gt; chat
+        main --&gt; migrate
+        main --&gt; conn
+        main --&gt; exec
+        chat --&gt; llm
+        chat --&gt; migrate
+        migrate --&gt; exec
+        migrate --&gt; tgt
+        migrate --&gt; xlate
+        migrate --&gt; conn
+        exec -.-&gt;|lazy| tgt
+        conn --&gt; redact
+        migrate --&gt; models
+        exec --&gt; models
+    end
+
+    store[(&quot;SQLite&quot;)]
+    ext[&quot;Databricks CLI (Go)&quot;]
+
+    apis --&gt;|HTTP| main
+    models --- store
+    exec --&gt;|subprocess| ext</pre>
+</section>
+<section id="s2"><h2>3. The three-language CLI chain</h2>
+<pre class="mermaid">flowchart LR
+    py[&quot;migrate.py&lt;br/&gt;&lt;b&gt;Python 3.12&lt;/b&gt;&quot;]
+    go[&quot;databricks CLI&lt;br/&gt;&lt;b&gt;Go&lt;/b&gt;&quot;]
+    labs[&quot;labs lakebridge&lt;br/&gt;&lt;b&gt;Python 3.12&lt;/b&gt;&lt;br/&gt;own venv&quot;]
+    jvm[&quot;databricks-morph-plugin.jar&lt;br/&gt;&lt;b&gt;Java 21&lt;/b&gt;&quot;]
+    out[&quot;Transpiled Databricks SQL&quot;]
+
+    py --&gt;|&quot;argv array&lt;br/&gt;_subprocess_env()&quot;| go
+    go --&gt;|&quot;spawns, injecting&lt;br/&gt;DATABRICKS_AUTH_TYPE&quot;| labs
+    labs --&gt;|&quot;java -jar&quot;| jvm
+    jvm --&gt; out
+
+    bug1[&quot;BUG 1 — the Go wrapper injects&lt;br/&gt;auth_type=databricks-cli, so a valid&lt;br/&gt;DATABRICKS_TOKEN is ignored.&lt;br/&gt;Fix: pin auth_type=pat&quot;]
+    bug2[&quot;BUG 2 — openjdk@21 is keg-only,&lt;br/&gt;so the JVM is not on PATH.&lt;br/&gt;Fix: set JAVA_HOME explicitly&quot;]
+
+    go -.-&gt; bug1
+    jvm -.-&gt; bug2
+
+    classDef bug fill:#ffebee,stroke:#b71c1c,color:#000
+    class bug1,bug2 bug</pre>
+</section>
+<section id="s3"><h2>4. Flowchart — migration engine decision tree</h2>
+<pre class="mermaid">flowchart TD
+    start([Migration requested]) --&gt; force{&quot;force=true?&quot;}
+    force --&gt;|no| exists{&quot;Target object&lt;br/&gt;already exists?&quot;}
+    force --&gt;|yes| sys
+    exists --&gt;|yes| short[/&quot;Short-circuit:&lt;br/&gt;COMPLETED,&lt;br/&gt;&#x27;-- ALREADY MIGRATED&#x27;&quot;/]
+    exists --&gt;|no| sys{&quot;source_system?&quot;}
+
+    sys --&gt;|redshift| rtype{&quot;object_type?&quot;}
+    sys --&gt;|starburst| stype{&quot;object_type?&quot;}
+
+    rtype --&gt;|&quot;table · view&quot;| rddl[&quot;SHOW TABLE →&lt;br/&gt;lakebridge transpile&lt;br/&gt;+ Morpheus JVM&quot;]
+    rtype --&gt;|&quot;procedure&quot;| rproc[&quot;SHOW PROCEDURE → transpile&quot;]
+    rtype --&gt;|&quot;function&quot;| rfunc[&quot;pg_proc reconstruct → transpile&quot;]
+    rtype --&gt;|&quot;table-data&quot;| rdata[&quot;SELECT rows →&lt;br/&gt;DROP+CREATE+INSERT&quot;]
+
+    stype --&gt;|&quot;table · view&lt;br/&gt;(default path)&quot;| scustom[&quot;starburst_ddl_translator&lt;br/&gt;pure Python&quot;]
+    stype --&gt;|&quot;table · view&lt;br/&gt;(experimental flag)&quot;| sllm[&quot;lakebridge llm-transpile&lt;br/&gt;→ remote job&quot;]
+    stype --&gt;|&quot;table-data&quot;| sdata[&quot;read_table_rows →&lt;br/&gt;DROP+CREATE+INSERT&quot;]
+
+    rddl --&gt; apply{&quot;object_type&lt;br/&gt;== view?&quot;}
+    rproc --&gt; apply
+    rfunc --&gt; apply
+    scustom --&gt; apply
+
+    apply --&gt;|yes| viewskip[/&quot;NOT executed —&lt;br/&gt;view body references&lt;br/&gt;original table names&quot;/]
+    apply --&gt;|no| create[&quot;rewrite_ddl_target →&lt;br/&gt;CREATE OR REPLACE in&lt;br/&gt;lakebridge_demo.g3_migrations&quot;]
+
+    sllm --&gt; poll[&quot;Poll job to terminal state&lt;br/&gt;(exit 0 = dispatched, not done)&quot;]
+    poll --&gt; nowrite[/&quot;Nothing applied to target —&lt;br/&gt;SQL written to workspace folder&quot;/]
+
+    rdata --&gt; verify[&quot;SELECT COUNT(*) verify&quot;]
+    sdata --&gt; verify
+
+    create --&gt; done([COMPLETED])
+    verify --&gt; done
+    viewskip --&gt; done
+    nowrite --&gt; done
+    short --&gt; done
+
+    classDef eng fill:#e8f5e9,stroke:#1b5e20,color:#000
+    classDef warn fill:#fff8e1,stroke:#f57f17,color:#000
+    class rddl,rproc,rfunc,scustom,rdata,sdata eng
+    class viewskip,nowrite,short warn</pre>
+</section>
+<section id="s4"><h2>5. Data flow diagram — level 0</h2>
+<pre class="mermaid">flowchart LR
+    op([Operator])
+    p0[&quot;Lakebridge Migration Console&quot;]
+    rs[(&quot;Redshift&quot;)]
+    sb[(&quot;Starburst&quot;)]
+    dbx[(&quot;Databricks&quot;)]
+    d1[(&quot;runs.db&quot;)]
+
+    op --&gt;|&quot;instruction · drag · click&quot;| p0
+    p0 --&gt;|&quot;status · DDL · rows · logs&quot;| op
+    rs --&gt;|&quot;metadata · DDL · rows&quot;| p0
+    sb --&gt;|&quot;metadata · DDL · rows&quot;| p0
+    p0 --&gt;|&quot;CREATE · INSERT&quot;| dbx
+    dbx --&gt;|&quot;catalogs · preview rows&quot;| p0
+    p0 --&gt;|&quot;runs · events · migrations · batches&quot;| d1
+    d1 --&gt;|&quot;history · progress&quot;| p0</pre>
+</section>
+<section id="s5"><h2>6. Data flow diagram — level 1 (migrate)</h2>
+<pre class="mermaid">flowchart TB
+    op([Operator])
+
+    p1[&quot;1.0 Browse&lt;br/&gt;/explore/*&quot;]
+    p2[&quot;2.0 Extract source DDL&quot;]
+    p3[&quot;3.0 Transpile / translate&quot;]
+    p4[&quot;4.0 Apply to target&quot;]
+    p5[&quot;5.0 Copy rows&quot;]
+    p6[&quot;6.0 Record + redact&quot;]
+
+    rs[(&quot;Redshift&quot;)]
+    sb[(&quot;Starburst&quot;)]
+    dbx[(&quot;Databricks&quot;)]
+    cli[&quot;Lakebridge CLI + JVM&quot;]
+    d1[(&quot;migrations&quot;)]
+    d2[(&quot;events&quot;)]
+
+    op --&gt; p1
+    p1 &lt;--&gt; rs
+    p1 &lt;--&gt; sb
+    p1 &lt;--&gt; dbx
+    p1 --&gt;|&quot;chosen object&quot;| p2
+    p2 --&gt;|&quot;SHOW TABLE / SHOW CREATE TABLE&quot;| rs
+    p2 --&gt; sb
+    p2 --&gt;|&quot;source_ddl&quot;| p3
+    p3 --&gt;|&quot;argv&quot;| cli
+    cli --&gt;|&quot;transpiled SQL&quot;| p3
+    p3 --&gt;|&quot;output_ddl&quot;| p4
+    p4 --&gt;|&quot;CREATE OR REPLACE&quot;| dbx
+    p2 -.-&gt;|&quot;table-data only&quot;| p5
+    p5 --&gt;|&quot;SELECT&quot;| rs
+    p5 --&gt; sb
+    p5 --&gt;|&quot;chunked INSERT (bound params)&quot;| dbx
+    p4 --&gt; p6
+    p5 --&gt; p6
+    p6 --&gt; d1
+    p6 --&gt; d2
+    p6 --&gt;|&quot;status · row_count&quot;| op
+
+    classDef trust fill:#fce4ec,stroke:#880e4f,color:#000
+    class p6 trust</pre>
+</section>
+<section id="s6"><h2>7. Sequence — drag-and-drop migration</h2>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    actor U as Operator
+    participant Row as DraggableRow
+    participant Zone as TargetDropZone
+    participant Ctx as MigrationActions
+    participant API as FastAPI
+    participant Mig as migrate.py
+    participant Src as Redshift/Starburst
+    participant CLI as Lakebridge + JVM
+    participant DBX as Databricks
+
+    U-&gt;&gt;Row: dragstart
+    Row-&gt;&gt;Row: setData(DRAG_MIME, encodeDrag(obj))
+    U-&gt;&gt;Zone: drop
+    Zone-&gt;&gt;Ctx: handleDrop(obj)
+
+    alt table or view
+        Ctx-&gt;&gt;API: POST /migrate/{sys}/table-and-data/...
+    else routine
+        Ctx-&gt;&gt;API: POST /migrate/{sys}/ddl/...
+    end
+
+    Note over Ctx: POST does not resolve until terminal —&lt;br/&gt;so polling starts immediately
+    Ctx-&gt;&gt;Ctx: startJob() → pollForPickup every 2000 ms
+
+    API-&gt;&gt;Mig: migrate_and_copy_*
+    Mig-&gt;&gt;DBX: object_exists() (sampled BEFORE ddl step)
+    Mig-&gt;&gt;Src: SHOW TABLE / SHOW CREATE TABLE
+    Src--&gt;&gt;Mig: source_ddl
+    Mig-&gt;&gt;CLI: transpile (argv array)
+    CLI--&gt;&gt;Mig: output_ddl
+    Mig-&gt;&gt;DBX: CREATE OR REPLACE
+    Mig-&gt;&gt;Src: SELECT rows
+    Mig-&gt;&gt;DBX: chunked INSERT (bound params)
+    Mig-&gt;&gt;DBX: SELECT COUNT(*) verify
+    Mig--&gt;&gt;API: Migration(status=completed, row_count)
+
+    loop until terminal
+        Ctx-&gt;&gt;API: GET /migrations
+        API--&gt;&gt;Ctx: [...]
+    end
+
+    API--&gt;&gt;Ctx: migration
+    Ctx-&gt;&gt;Ctx: stopPolling + bumpTargetVersion()
+    Ctx--&gt;&gt;U: MigrationCard COMPLETED
+    Note over Ctx: targetVersion bump makes the open&lt;br/&gt;Databricks tree node refetch</pre>
+</section>
+<section id="s7"><h2>8. Sequence — whole-schema batch</h2>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    actor U as Operator
+    participant Tree as SchemaNode
+    participant Ctx as MigrationActions
+    participant Dlg as ConfirmDialog
+    participant API as FastAPI
+    participant Mig as migrate.py
+    participant Th as Worker thread
+    participant Store as batch_store
+
+    U-&gt;&gt;Tree: click &quot;batch migrate schema&quot;&lt;br/&gt;or right-click → Batch migrate schema
+    Tree-&gt;&gt;Ctx: requestSchemaBatch(schema, catalog?)
+    Ctx-&gt;&gt;Dlg: open (includeData checkbox)
+    U-&gt;&gt;Dlg: Start batch now
+    Dlg-&gt;&gt;Ctx: confirmSchemaBatch()
+
+    alt catalog present
+        Ctx-&gt;&gt;API: POST /migrate/starburst/catalog/{c}/schema/{s}/batch
+    else
+        Ctx-&gt;&gt;API: POST /migrate/redshift/schema/{s}/batch
+    end
+
+    API-&gt;&gt;Mig: build items / start_batch
+    Mig-&gt;&gt;Store: create(total_items)
+    Mig-&gt;&gt;Th: daemon thread
+    API--&gt;&gt;Ctx: BatchSummary(status=pending)
+    Note over API,Ctx: returns immediately — unlike single migrations
+
+    loop per item, sequential, never aborts
+        Th-&gt;&gt;Th: _run_single_batch_item
+        Th-&gt;&gt;Store: add_migration(id)
+    end
+    Th-&gt;&gt;Store: COMPLETED or COMPLETED_WITH_ERRORS
+
+    loop every 2500 ms
+        Ctx-&gt;&gt;API: GET /batches/{id}
+        API--&gt;&gt;Ctx: counts + per-item migrations
+    end
+    Ctx--&gt;&gt;U: BatchCard progress → terminal</pre>
+</section>
+<section id="s8"><h2>9. Sequence — AI Command (plan→confirm→execute)</h2>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    actor U as Operator
+    participant CP as ChatPanel
+    participant API as FastAPI
+    participant Chat as chat.py
+    participant Inv as Live inventory
+    participant LLM as llm_planner
+    participant Mig as migrate.py
+
+    U-&gt;&gt;CP: &quot;migrate the regions table and its data&quot;
+    CP-&gt;&gt;API: POST /chat/plan
+    API-&gt;&gt;Chat: parse_instruction()
+
+    Note over Chat: 4 methods, in order
+    Chat-&gt;&gt;Inv: resolve names against real systems
+    alt 1 — deterministic verb regex
+        Chat--&gt;&gt;API: plan
+    else 2 — Databricks data question
+        Chat--&gt;&gt;API: plan (safe SELECT gate)
+    else 3 — MCP fallback (disabled)
+        Chat--&gt;&gt;API: refusal
+    else 4 — LLM fallback
+        Chat-&gt;&gt;LLM: interpret(instruction, inventory)
+        LLM--&gt;&gt;Chat: candidate action
+        Note over Chat: GUARDRAIL — kind allowlist,&lt;br/&gt;field whitelist, identifier regex,&lt;br/&gt;then re-resolve against live systems
+        Chat--&gt;&gt;API: plan or refusal
+    end
+
+    API--&gt;&gt;CP: {understood, plan_id, action, endpoint, explanation}
+    CP--&gt;&gt;U: plan card — nothing has executed
+    U-&gt;&gt;CP: Review &amp; confirm → Execute
+    CP-&gt;&gt;API: POST /chat/execute {plan_id}
+    API-&gt;&gt;Chat: resolve_plan → execute_plan
+    Chat-&gt;&gt;Mig: dispatch on action.kind
+    Note over Chat,Mig: starburst DDL always uses the&lt;br/&gt;deterministic path, never the LLM one
+    Mig--&gt;&gt;API: migration_id / batch_id / run_id
+    API--&gt;&gt;CP: result handle
+
+    loop every 1500 ms until terminal
+        CP-&gt;&gt;API: GET /migrations/{id} | /batches/{id} | /runs/{id}
+    end
+    CP--&gt;&gt;U: MigrationCard / BatchCard / run pill</pre>
+</section>
+<section id="s9"><h2>10. Sequence — reconcile (dispatch vs completion)</h2>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    participant API as FastAPI
+    participant Ex as executor.py
+    participant CLI as Lakebridge CLI
+    participant Job as Databricks Job
+    participant Meta as reconcile_meta tables
+    participant Store as run_store
+
+    API-&gt;&gt;Ex: run_command_async(run_id, &quot;reconcile&quot;)
+    Ex-&gt;&gt;Store: status = running
+    Ex-&gt;&gt;CLI: subprocess (input=&quot;no\n&quot;)
+    CLI-&gt;&gt;Job: trigger job run
+    CLI--&gt;&gt;Ex: exit 0 + &quot;/jobs/{id}/runs/{run}&quot;
+    Note over Ex: exit 0 means DISPATCHED, not done.&lt;br/&gt;Run stays &quot;running&quot;.
+    Ex-&gt;&gt;Ex: JOB_RUN_URL_RE scrape
+
+    loop every 10 s, up to 480 s
+        Ex-&gt;&gt;Job: databricks jobs get-run
+        Job--&gt;&gt;Ex: life_cycle_state
+    end
+
+    Ex-&gt;&gt;Meta: SELECT from reconcile_meta.main&lt;br/&gt;(matched by dispatch time — no shared id)
+    Ex-&gt;&gt;Meta: SELECT from reconcile_meta.metrics
+    Meta--&gt;&gt;Ex: reconciliation_passed + metrics
+    Ex-&gt;&gt;Store: set_result(...)
+    Ex-&gt;&gt;Store: completed / failed</pre>
+</section>
+<section id="s10"><h2>11. ER diagram — SQLite</h2>
+<pre class="mermaid">erDiagram
+    RUNS ||--o{ EVENTS : &quot;run_id (only declared FK)&quot;
+    BATCHES ||..o{ MIGRATIONS : &quot;migration_ids_json (implicit)&quot;
+
+    RUNS {
+        TEXT id PK &quot;run_1, run_2 ...&quot;
+        TEXT command &quot;CLI subcommand&quot;
+        TEXT args_json &quot;JSON array&quot;
+        TEXT status &quot;queued|running|completed|failed&quot;
+        TEXT started_at
+        TEXT ended_at
+        INTEGER exit_code
+        TEXT result_json &quot;reconcile payload only&quot;
+    }
+
+    EVENTS {
+        INTEGER id PK &quot;AUTOINCREMENT&quot;
+        TEXT run_id FK &quot;REFERENCES runs(id)&quot;
+        TEXT timestamp
+        TEXT type &quot;stdout|stderr|status&quot;
+        TEXT message &quot;always redacted&quot;
+    }
+
+    MIGRATIONS {
+        TEXT id PK &quot;mig_1, mig_2 ...&quot;
+        TEXT source_system &quot;redshift|starburst&quot;
+        TEXT object_type &quot;table|view|function|procedure|table-data&quot;
+        TEXT object_name &quot;qualified&quot;
+        TEXT engine &quot;4 MigrationEngine values&quot;
+        TEXT status &quot;reuses RunStatus&quot;
+        TEXT source_ddl
+        TEXT output_ddl
+        TEXT error &quot;always redacted&quot;
+        INTEGER row_count
+        TEXT started_at
+        TEXT ended_at
+        TEXT target_catalog &quot;added by ALTER&quot;
+        TEXT target_schema &quot;added by ALTER&quot;
+        TEXT target_table &quot;added by ALTER&quot;
+    }
+
+    BATCHES {
+        TEXT id PK &quot;batch_1, batch_2 ...&quot;
+        TEXT status &quot;pending|running|completed|completed_with_errors&quot;
+        INTEGER total_items
+        TEXT migration_ids_json &quot;JSON array of migrations.id&quot;
+        TEXT created_at
+        TEXT started_at
+        TEXT ended_at
+    }</pre>
+</section>
+<section id="s11"><h2>12. Class diagram (UML)</h2>
+<pre class="mermaid">classDiagram
+    class Run {
+        +str id
+        +str command
+        +list~str~ args
+        +RunStatus status
+        +str started_at
+        +str ended_at
+        +int exit_code
+        +list~Event~ events
+        +dict result
+    }
+    class Event {
+        +int id
+        +str run_id
+        +str timestamp
+        +EventType type
+        +str message
+    }
+    class Migration {
+        +str id
+        +str source_system
+        +str object_type
+        +str object_name
+        +MigrationEngine engine
+        +RunStatus status
+        +str source_ddl
+        +str output_ddl
+        +str error
+        +int row_count
+        +str target_catalog
+        +str target_schema
+        +str target_table
+    }
+    class Batch {
+        +str id
+        +BatchStatus status
+        +int total_items
+        +list~str~ migration_ids
+    }
+
+    class RunStore {
+        -Lock _lock
+        +create(command, args) Run
+        +get(run_id) Run
+        +list() list~Run~
+        +set_status(run_id, status, exit_code)
+        +set_result(run_id, result)
+        +add_event(run_id, type, message) Event
+    }
+    class MigrationStore {
+        +create(source_system, object_type, object_name, engine) Migration
+        +update(mig_id, ...) void
+        +get(mig_id) Migration
+        +list() list~Migration~
+    }
+    class BatchStore {
+        +create(total_items) Batch
+        +add_migration(batch_id, migration_id)
+        +set_status(batch_id, status)
+        +get(batch_id) Batch
+    }
+
+    class RunStatus {
+        &lt;&lt;enumeration&gt;&gt;
+        queued
+        running
+        completed
+        failed
+    }
+    class EventType {
+        &lt;&lt;enumeration&gt;&gt;
+        stdout
+        stderr
+        status
+    }
+    class BatchStatus {
+        &lt;&lt;enumeration&gt;&gt;
+        pending
+        running
+        completed
+        completed_with_errors
+    }
+    class MigrationEngine {
+        &lt;&lt;enumeration&gt;&gt;
+        lakebridge-transpile
+        llm-transpile-experimental
+        data-copy
+        starburst-custom-ddl
+    }
+
+    RunStore &quot;1&quot; --&gt; &quot;*&quot; Run
+    Run &quot;1&quot; *-- &quot;*&quot; Event
+    MigrationStore &quot;1&quot; --&gt; &quot;*&quot; Migration
+    BatchStore &quot;1&quot; --&gt; &quot;*&quot; Batch
+    Batch ..&gt; Migration : ids only
+    Run --&gt; RunStatus
+    Event --&gt; EventType
+    Migration --&gt; RunStatus
+    Migration --&gt; MigrationEngine
+    Batch --&gt; BatchStatus</pre>
+<pre class="mermaid">classDiagram
+    class DragObject {
+        +system: redshift|starburst
+        +objectType: table|view|procedure|function|udf
+        +catalog?: string
+        +schema: string
+        +name: string
+    }
+    class Job {
+        +key: string
+        +system: string
+        +objectType: string
+        +name: string
+        +action: ddl|ddl-custom|data|create-and-copy
+        +triggeredAt: string
+        +migration: Migration|null
+        +clientError: string|null
+        +settled: boolean
+    }
+    class MigrationActionsValue {
+        &lt;&lt;interface&gt;&gt;
+        +targetVersion: number
+        +jobs: Job[]
+        +batches: TrackedBatch[]
+        +selectMode: boolean
+        +handleDrop(obj) void
+        +runDdlMigration(obj) void
+        +runDdlMigrationCustom(obj) void
+        +runCreateAndCopy(obj) void
+        +requestDataCopy(system, schema, table, catalog?) void
+        +requestSchemaBatch(schema, catalog?) void
+        +submitSelectedBatch() void
+    }
+    class PreviewTarget {
+        &lt;&lt;union&gt;&gt;
+        +kind: table|routine
+        +system: redshift|starburst|databricks
+    }
+    class TrackedBatch {
+        +key: string
+        +label: string
+        +batch: BatchSummary
+    }
+
+    MigrationActionsValue --&gt; Job
+    MigrationActionsValue --&gt; TrackedBatch
+    MigrationActionsValue ..&gt; DragObject</pre>
+</section>
+<section id="s12"><h2>13. State diagrams</h2>
+<pre class="mermaid">stateDiagram-v2
+    direction LR
+    [*] --&gt; queued : store.create()
+    queued --&gt; running : set_status(RUNNING)
+    running --&gt; completed : exit code 0
+    running --&gt; failed : non-zero / timeout / disallowed
+    completed --&gt; [*]
+    failed --&gt; [*]
+
+    note right of running
+        reconcile stays here through
+        the whole job poll — exit 0
+        only means &quot;dispatched&quot;
+    end note</pre>
+<pre class="mermaid">stateDiagram-v2
+    direction LR
+    [*] --&gt; pending : batch_store.create()
+    pending --&gt; running : first item starts
+    running --&gt; completed : every item COMPLETED
+    running --&gt; completed_with_errors : any item FAILED
+    completed --&gt; [*]
+    completed_with_errors --&gt; [*]
+
+    note right of completed_with_errors
+        Exists so a partially failed batch
+        can never render as a plain success
+    end note</pre>
+</section>
+<section id="s13"><h2>14. Block diagram — runtime topology</h2>
+<pre class="mermaid">block-beta
+    columns 3
+
+    browser[&quot;Browser&lt;br/&gt;localhost:5173&quot;]:3
+    space:3
+    vite[&quot;Vite dev server :5173&lt;br/&gt;same-origin /api proxy&quot;]:3
+    space:3
+    fastapi[&quot;FastAPI / Uvicorn :8811&quot;]:3
+    space:3
+    sqlite[(&quot;SQLite&lt;br/&gt;runs.db&quot;)]
+    cli[&quot;Databricks CLI (Go)&lt;br/&gt;→ Lakebridge (Python)&lt;br/&gt;→ Morpheus (JVM)&quot;]
+    conns[&quot;Connectors&quot;]
+    space:3
+    redshift[(&quot;Redshift&lt;br/&gt;:5439&quot;)]
+    starburst[(&quot;Starburst&lt;br/&gt;:443&quot;)]
+    databricks[(&quot;Databricks&lt;br/&gt;SQL Warehouse&quot;)]
+
+    browser --&gt; vite
+    vite --&gt; fastapi
+    fastapi --&gt; sqlite
+    fastapi --&gt; cli
+    fastapi --&gt; conns
+    conns --&gt; redshift
+    conns --&gt; starburst
+    conns --&gt; databricks
+    cli --&gt; databricks</pre>
+</section>
+<section id="s14"><h2>15. Polling map</h2>
+<pre class="mermaid">flowchart LR
+    subgraph timers[&quot;Frontend polling&quot;]
+        a[&quot;App — 3000 ms&lt;br/&gt;GET /runs&lt;br/&gt;drives ADAPTER LIVE&quot;]
+        b[&quot;pollForPickup — 2000 ms&lt;br/&gt;GET /migrations&quot;]
+        c[&quot;pollBatch — 2500 ms&lt;br/&gt;GET /batches/{id}&quot;]
+        d[&quot;ChatPanel — 1500 ms&lt;br/&gt;migrations | batches | runs&quot;]
+        e[&quot;RunDetail — 1500 ms&lt;br/&gt;GET /runs/{id} + /events&quot;]
+        f[&quot;ReconcileView — 2500 ms&lt;br/&gt;GET /runs/{id}/reconcile&quot;]
+        g[&quot;HistoryList — 4000 ms&lt;br/&gt;GET /history&quot;]
+    end
+
+    a --&gt;|&quot;unmount only&quot;| stop([stop])
+    b --&gt;|&quot;migration terminal&lt;br/&gt;or POST settles&quot;| stop
+    c --&gt;|&quot;completed / completed_with_errors&quot;| stop
+    d --&gt;|&quot;result terminal&quot;| stop
+    e --&gt;|&quot;run terminal&quot;| stop
+    f --&gt;|&quot;result non-null&quot;| stop
+    g --&gt;|&quot;unmount only&quot;| stop</pre>
+</section>
+<footer>Source of truth: <code>docs/ARCHITECTURE.md</code>. Regenerate rather than hand-editing this file.</footer>
+</div>
+<script>mermaid.initialize({startOnLoad:true,theme:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'default'),securityLevel:'loose'});</script>
+</body></html>
