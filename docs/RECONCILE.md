@@ -34,12 +34,12 @@
 
 **Volume:** `lakebridge_demo.reconcile_meta.reconcile_volume`
 
-**2 dashboards** deployed to `/Users/you@example.com/.lakebridge/dashboards/`:
+**2 dashboards** deployed to `/Users/<user-email>/.lakebridge/dashboards/`:
 - `LAKEBRIDGE_Reconciliation_Metrics.lvdash.json`
 - `LAKEBRIDGE_Aggregate_Reconciliation_Metrics.lvdash.json`
 - Live URL: `https://<old-workspace>.cloud.databricks.com/sql/dashboardsv3/01f189cb92cf1083aaf3a52f94ce442a`
 
-**Config written:** `/Workspace/Users/you@example.com/.lakebridge/reconcile.yml`
+**Config written:** `/Workspace/Users/<user-email>/.lakebridge/reconcile.yml`
 ```yaml
 metadata_config:
   catalog: lakebridge_demo
@@ -99,12 +99,12 @@ Everything else — `python_wheel_task`, `package_name`, `entry_point: reconcile
 the `{{job.parameters.[...]}}` templating, `max_concurrent_runs: 2`, and both job
 parameters — is byte-identical to what Lakebridge generates.
 
-Spec: `out/recon_job_serverless.json` · **`job_id 254503333498153`**
+Spec: `out/recon_job_serverless.json` · **`job_id <reconcile-job-id>`**
 
 Then registered it in the install state so the CLI resolves it
 (`ReconcileRunner._get_recon_job_id` looks up `install_state.jobs["Reconciliation Runner"]`):
 ```json
-{ "resources": { "jobs": { "Reconciliation Runner": "254503333498153" } } }
+{ "resources": { "jobs": { "Reconciliation Runner": "<reconcile-job-id>" } } }
 ```
 
 **First run failed** with `ResourceDoesNotExist: recon_config_databricks_lakebridge_demo_all.json`
@@ -188,7 +188,7 @@ functioning correctly on serverless compute.
 | Reconcile dashboards (2) | ✅ deployed |
 | `reconcile.yml` config | ✅ written |
 | Reconciliation Runner job (Lakebridge-built) | ❌ failed — serverless-only |
-| Reconciliation Runner job (manual serverless) | ✅ **created, job_id 254503333498153** |
+| Reconciliation Runner job (manual serverless) | ✅ **created, job_id <reconcile-job-id>** |
 | End-to-end reconcile run | ✅ **SUCCESS — 4/4 defects detected** |
 
 **No destructive operation was performed.** Everything created is additive and
@@ -209,7 +209,7 @@ DROP CATALOG IF EXISTS lakebridge_demo CASCADE;
 ## G14 — Real Redshift-source reconcile test (separate setup, existing config untouched)
 
 **Everything documented above this section is untouched and still the live, working
-Databricks-to-Databricks setup** (job `254503333498153`, `reconcile.yml`, metadata infra). This
+Databricks-to-Databricks setup** (job `<reconcile-job-id>`, `reconcile.yml`, metadata infra). This
 section documents a **fully separate** test built to answer: does `reconcile` genuinely work
 against a real Redshift source, and what exactly does it check?
 
@@ -217,7 +217,7 @@ against a real Redshift source, and what exactly does it check?
 
 - UC Connection `g14_redshift_conn` → real Redshift (`CREATE CONNECTION ... TYPE redshift`),
   verified via a live `remote_query()` call.
-- Workspace folder `/Users/you@example.com/.lakebridge_g14_redshift/` — own `reconcile.yml`
+- Workspace folder `/Users/<user-email>/.lakebridge_g14_redshift/` — own `reconcile.yml`
   (`source.dialect: redshift`, `uc_connection_name: g14_redshift_conn`) and
   `recon_config_redshift_g14_redshift_conn_all.json`.
 - Job `LAKEBRIDGE_G14_Redshift_Reconciliation_Runner` (`job_id 843454635342447`) — same

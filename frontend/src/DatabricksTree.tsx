@@ -19,7 +19,7 @@ import {
 } from "./explorerApi";
 import { Icon } from "./Icon";
 import { usePreview } from "./PreviewPane";
-import { useRefreshMenu } from "./ContextMenu";
+import { useNodeMenu, useRefreshMenu } from "./ContextMenu";
 import { useMigrationActions } from "./MigrationActions";
 
 // Matches RedshiftTree.tsx's TypeGlyph — same class names, so the three
@@ -91,6 +91,11 @@ function TableRowWithColumns({
   const isView = t.type === "view";
   const [open, setOpen] = useState(false);
   const [columns, setColumns] = useState<Column[] | null>(null);
+  // G20 — right-click path to the SAME handler the inline eye button uses.
+  // Read-only target tree: view only, no migrate/copy actions exist here.
+  const { onContextMenu, menuElement } = useNodeMenu([
+    { label: "View data", onSelect: () => onPreview(t.catalog, t.schema, t.name) },
+  ]);
 
   useEffect(() => {
     if (!open || columns !== null) return;
@@ -102,7 +107,11 @@ function TableRowWithColumns({
 
   return (
     <div className="table-row-with-columns">
-      <div className="tree-leaf-row">
+      {/* G20: handler on the OUTER row — the eye button is a sibling of
+          .tree-leaf, so a right-click there would otherwise bubble to the
+          panel root's "Refresh". */}
+      <div className="tree-leaf-row" onContextMenu={onContextMenu}>
+        {menuElement}
         <div
           className="tree-leaf"
           data-tip={`${t.catalog}.${t.schema}.${t.name} · ${t.type}`}
@@ -147,8 +156,14 @@ function FunctionRow({
   fn: DatabricksRoutine;
   onRequestSource: (catalog: string, schema: string, name: string) => void;
 }) {
+  // G20 — same handler as the inline eye button; view-only, no migrate/copy.
+  const { onContextMenu, menuElement } = useNodeMenu([
+    { label: "View source", onSelect: () => onRequestSource(fn.catalog, fn.schema, fn.name) },
+  ]);
+
   return (
-    <div className="tree-leaf-row">
+    <div className="tree-leaf-row" onContextMenu={onContextMenu}>
+      {menuElement}
       <div
         className="tree-leaf"
         data-tip={`${fn.catalog}.${fn.schema}.${fn.name} · ${fn.type}`}
@@ -325,8 +340,10 @@ export function DatabricksTree() {
       <h3>
         <span className="engine-dot" /> Databricks (target — read-only)
         <RefreshControl label="Databricks root (catalogs)" onRefresh={refreshRoot} />
-        {rootMenuElement}
       </h3>
+      {/* G20: outside the <h3> — index.css:162 hides that heading in the rail
+          layout, which was swallowing the root's right-click menu. */}
+      {rootMenuElement}
       {error && <p className="error">{error}</p>}
       {catalogs === null && !error && <p className="empty">Loading real catalogs…</p>}
       {catalogs?.map((c) => (

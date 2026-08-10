@@ -1,7 +1,7 @@
 // G6 — thin client for the real chat endpoints (backend/app/chat.py +
 // main.py's POST /chat/plan, POST /chat/execute). Same rule as every other
 // *Api.ts file: hits the real FastAPI backend at 8811 only, never mocked,
-// and never calls the Lakebridge CLI directly (see README.md).
+// and never calls the Lakebridge CLI directly (see CLAUDE.md).
 
 import { API_BASE as BASE } from "./apiBase";
 async function post<T>(path: string, body: unknown): Promise<T> {

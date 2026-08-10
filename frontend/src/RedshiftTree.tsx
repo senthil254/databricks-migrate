@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { usePreview } from "./PreviewPane";
 import { explorerApi, type RedshiftRoutine, type RedshiftTable } from "./explorerApi";
 import { DRAG_MIME, encodeDrag, type DragObject } from "./dragTypes";
-import { useRefreshMenu } from "./ContextMenu";
+import { useNodeMenu, useRefreshMenu, type ContextMenuItem } from "./ContextMenu";
 import { Icon } from "./Icon";
 
 // G8 — refresh icon; the same onRefresh is also wired to a right-click
@@ -84,6 +84,7 @@ function DraggableRow({
   onRequestDdlMigration,
   extraActions,
   columnsToggle,
+  menuItems,
 }: {
   obj: DragObject;
   label: string;
@@ -95,10 +96,18 @@ function DraggableRow({
   onRequestDdlMigration?: (obj: DragObject) => void;
   extraActions?: React.ReactNode;
   columnsToggle?: React.ReactNode;
+  // G20 — right-click path to the SAME handlers the inline mini-btns call.
+  menuItems?: ContextMenuItem[];
 }) {
   const { openPreview } = usePreview();
+  const { onContextMenu, menuElement } = useNodeMenu(menuItems ?? []);
   return (
-    <div className="tree-leaf-row">
+    // G20: the handler goes on the OUTER row, not the inner .tree-leaf — the
+    // migrate/eye/copy buttons are siblings of .tree-leaf, so a right-click on
+    // that half of the row would otherwise miss the menu entirely and bubble
+    // up to the panel root's "Refresh".
+    <div className="tree-leaf-row" onContextMenu={onContextMenu}>
+      {menuElement}
       <div
         className="tree-leaf"
         draggable={!selectMode}
@@ -244,7 +253,15 @@ function SchemaNode({
     setRoutines(null);
     setError(null);
   };
-  const { onContextMenu, menuElement } = useRefreshMenu(refresh);
+  // G20 — same actions as this row's inline buttons, via right-click.
+  const schemaMenuItems: ContextMenuItem[] = [{ label: "Refresh", onSelect: refresh }];
+  if (onRequestSchemaBatch) {
+    schemaMenuItems.push({
+      label: "Batch migrate schema",
+      onSelect: () => onRequestSchemaBatch(schema),
+    });
+  }
+  const { onContextMenu, menuElement } = useNodeMenu(schemaMenuItems);
 
   return (
     <div className="tree-node">
@@ -274,9 +291,23 @@ function SchemaNode({
           {tables?.map((t) => {
             const isView = t.type === "view";
             const obj: DragObject = { system: "redshift", objectType: isView ? "view" : "table", schema, name: t.name };
+            const rowMenuItems: ContextMenuItem[] = [];
+            if (onRequestDdlMigration && !selectMode) {
+              rowMenuItems.push({ label: "Migrate", onSelect: () => onRequestDdlMigration(obj) });
+            }
+            // !selectMode on every item: the inline buttons live behind
+            // `{!selectMode && extraActions}`, so without it the menu would
+            // offer actions in batch-select mode that no button offers.
+            if (onRequestPreview && !selectMode) {
+              rowMenuItems.push({ label: "View data", onSelect: () => onRequestPreview(schema, t.name) });
+            }
+            if (t.type !== "view" && !selectMode) {
+              rowMenuItems.push({ label: "Copy data", onSelect: () => onRequestDataCopy(schema, t.name) });
+            }
             return (
               <TableRowWithColumns
                 key={t.name}
+                menuItems={rowMenuItems}
                 schema={schema}
                 table={t.name}
                 obj={obj}
@@ -315,9 +346,17 @@ function SchemaNode({
           })}
           {routines?.map((r) => {
             const obj: DragObject = { system: "redshift", objectType: r.type === "PROCEDURE" ? "procedure" : "function", schema, name: r.name };
+            const routineMenuItems: ContextMenuItem[] = [];
+            if (onRequestDdlMigration && !selectMode) {
+              routineMenuItems.push({ label: "Migrate", onSelect: () => onRequestDdlMigration(obj) });
+            }
+            if (onRequestSource && !selectMode) {
+              routineMenuItems.push({ label: "View source", onSelect: () => onRequestSource(schema, r.name, r.type) });
+            }
             return (
               <DraggableRow
                 key={r.name}
+                menuItems={routineMenuItems}
                 obj={obj}
                 label={r.name}
                 sub={r.type}
@@ -384,8 +423,11 @@ export function RedshiftTree({
       <h3>
         <span className="engine-dot lakebridge" /> Redshift <span className="engine-tag">lakebridge-transpile (deterministic)</span>
         <RefreshControl label="Redshift root (databases/schemas)" onRefresh={refreshRoot} />
-        {rootMenuElement}
       </h3>
+      {/* G20: outside the <h3> on purpose — index.css:162 hides that heading
+          in the rail layout (.sys-section-body .source-panel > h3), which was
+          silently swallowing the root's right-click menu. */}
+      {rootMenuElement}
       {error && <p className="error">{error}</p>}
       {databases && <p className="muted mono">databases: {databases.join(", ") || "(none)"}</p>}
       {schemas === null && !error && <p className="empty">Loading real schemas…</p>}

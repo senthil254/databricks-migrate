@@ -671,3 +671,32 @@ you name, not with the whole internet.
 **One more fib fixed.** If you asked it to copy a table that didn't exist, it said "your writing is
 broken" instead of "that table isn't there." It was even writing a nonsense sentence to the database.
 Now it just tells you the truth.
+
+---
+
+## The mix-up, the secret, and the tidy-up button (2026-08-03)
+
+**Talking to the wrong house.** Our app has an address book that says which house to deliver things
+to. But sometimes it went out the door *before* reading the address book — so it used the old
+address from memory and knocked on the wrong house! The house said "I don't know you," and we thought
+our key was broken. The key was fine. We just weren't reading the address book first. Now the app
+always reads it before it leaves.
+
+**A secret written on the poster about keeping secrets.** We have a test whose job is to check "does
+the app ever blurt out the password?" But somebody had written the actual password *inside that
+test* — like putting your PIN on the poster reminding people not to share their PIN. We fixed it so
+the test looks the password up when it runs, instead of writing it down.
+
+Then, while explaining the fix, we accidentally copied the password into our explanation. Oops! But
+our safety-check caught it before anything was shared. That's exactly why you check twice.
+
+**Sharing the code.** We put the project on the internet for others to see — but from a *copy*, so
+our own version kept all the real details and the shared one has pretend ones. GitHub even stopped us
+once, because a made-up password in a test looked real to its guard dog. There was a button saying
+"ignore the guard dog." We didn't press it. Pressing that button is how people get into trouble
+later. We changed the pretend password instead.
+
+**A tidy-up button.** After lots of practice runs, the shelf gets full of old work and you can't tell
+what you just made. So there's a "testing" button that clears the shelf, keeping three things. It
+only shows up in practice mode — during a show it isn't there, so nobody can bump it. And it never
+deletes straight away: it shows you the list first and waits for you to say yes.

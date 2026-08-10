@@ -79,3 +79,14 @@ These are enforced in code, not conventions:
   SQL or DDL.
 - **CORS names origins explicitly.** `*` raises at startup, because this API writes real data and has
   no authentication.
+
+## Source data volume
+
+All source tables are capped at 10 rows by `scripts/trim_source_rows.py`. The migration path is
+identical at any size — real DDL, real row copy, real `COUNT(*)` verification — so the extra volume
+bought nothing but wall-clock. A whole-schema Redshift batch over `public` went from an extrapolated
+45-90 minutes to **6.1 minutes** after trimming.
+
+The script is idempotent and defaults to a dry run. Its scope is an allowlist (Redshift `public`,
+Starburst `mcp2ohio`); Starburst's federated catalogs are deliberately unreachable, because a DELETE
+through a federation connector would remove rows from the external system behind it.

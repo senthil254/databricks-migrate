@@ -47,6 +47,8 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; text-wra
   grid-template-columns: var(--rail-w) 1fr;
   height: 100vh;
   overflow: hidden;
+  /* G21: anchors the rail resize handle to the rail/content boundary. */
+  position: relative;
   background:
     radial-gradient(70% 55% at 12% 0%, color-mix(in srgb, var(--starburst) 8%, transparent), transparent 62%),
     radial-gradient(60% 50% at 92% 100%, color-mix(in srgb, var(--redshift) 7%, transparent), transparent 60%),
@@ -62,6 +64,58 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; text-wra
   background: var(--bg-1);
   border-right: 1px solid var(--line);
   overflow-y: auto;
+}
+
+/* ---------- G21: rail resize handle ----------
+   Widens the explorer so long qualified object names are readable without
+   scrolling each row. Complements the explorer's horizontal scrollbar, which
+   is untouched and still handles the single-long-row case.
+
+   The hit area is 10px wide while the visible grip is a 2px line — a hairline
+   that is only grabbable on its exact pixel is the classic failure of this
+   control. It is `position: sticky` inside the scrolling rail so it stays on
+   screen when the rail's own content scrolls. */
+.rail-resizer {
+  /* Absolute against .shell, NOT inside .rail — the rail scrolls its own
+     content, so a handle within it cannot stay pinned across the full
+     viewport height. `left` tracks the same custom property the grid uses, so
+     the handle is always exactly on the rail/content boundary; the transform
+     centres its 10px hit area over that 1px seam. */
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--rail-w-explorer);
+  transform: translateX(-5px);
+  width: 10px;
+  cursor: col-resize;
+  display: flex;
+  justify-content: center;
+  z-index: 5;
+  touch-action: none;
+}
+.rail-resizer-grip {
+  width: 2px;
+  height: 100%;
+  background: transparent;
+  transition: background 0.15s var(--ease);
+}
+.rail-resizer:hover .rail-resizer-grip,
+.rail-resizer:focus-visible .rail-resizer-grip,
+.rail-resizer.resizing .rail-resizer-grip {
+  background: var(--grad);
+}
+.rail-resizer:focus-visible {
+  outline: 2px solid var(--starburst);
+  outline-offset: -2px;
+}
+/* While dragging, the grid must track the pointer exactly — the 0.28s
+   transition on .shell would otherwise make the rail lag behind the cursor
+   and feel broken. Also kills text selection across the whole app. */
+.shell-resizing { transition: none !important; }
+.shell-resizing * { user-select: none !important; }
+.shell-resizing { cursor: col-resize; }
+@media (prefers-reduced-motion: reduce) {
+  .rail-resizer-grip { transition: none; }
 }
 .brand { display: flex; align-items: center; gap: 11px; padding: 4px 6px 0; }
 .brand-mark {
@@ -1509,4 +1563,111 @@ details summary { cursor: pointer; font-size: 0.85em; opacity: 0.75; margin: 0.3
 }
 @media (prefers-reduced-motion: reduce) {
   .chip-skeleton { animation: none; }
+}
+
+/* ---------- Testing tools (Logs section) ----------
+   Only rendered when VITE_TESTING_TOOLS=1. Styled to read as a maintenance
+   panel rather than part of the product: muted by default, and the one
+   destructive control clearly marked. */
+.testing-tools { margin-top: 28px; border-top: 1px dashed var(--line); padding-top: 14px; }
+.testing-tools-head {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: 0; padding: 4px 0; cursor: pointer;
+  color: var(--muted); font-family: var(--font-body);
+}
+.testing-tools-head:hover { color: var(--text-h); }
+.testing-tools-note { font-size: 11px; }
+.testing-tools-body { display: flex; flex-direction: column; gap: 12px; padding: 12px 0 4px; }
+.testing-tools-target { font-size: 12px; }
+.testing-tools-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 720px) { .testing-tools-lists { grid-template-columns: 1fr; } }
+.testing-tools-list {
+  list-style: none; margin: 6px 0 0; padding: 8px 10px;
+  max-height: 190px; overflow-y: auto;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg-1);
+  font-size: 12px; line-height: 1.7;
+}
+.testing-tools-list .keep { color: var(--ok); }
+.testing-tools-list .drop { color: var(--text); }
+.testing-tools-actions { display: flex; gap: 10px; align-items: center; }
+.testing-tools-danger {
+  padding: 8px 16px; border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--failed) 45%, transparent);
+  background: color-mix(in srgb, var(--failed) 12%, transparent);
+  color: var(--text-h); font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.25s var(--ease);
+}
+.testing-tools-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--failed) 22%, transparent); }
+.testing-tools-danger:disabled { opacity: 0.4; cursor: default; }
+
+/* ---------- Testing rail item ----------
+   Only rendered when VITE_TESTING_TOOLS=1. Styled as an ordinary rail item so
+   it sits in the nav like everything else — the destructive warning lives in
+   the confirm dialog, which is the step that actually drops objects. */
+.rail-testing:disabled { opacity: 0.55; cursor: default; }
+.rail-testing-msg {
+  margin: 6px 12px 0; font-size: 11.5px; line-height: 1.45;
+  font-family: var(--font-body);
+}
+.rail-testing-msg.ok  { color: var(--ok); }
+.rail-testing-msg.err { color: var(--failed); }
+
+/* Object lists inside the reset confirm dialog */
+.reset-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+@media (max-width: 640px) { .reset-lists { grid-template-columns: 1fr; } }
+.reset-list {
+  list-style: none; margin: 6px 0 0; padding: 8px 10px;
+  max-height: 200px; overflow-y: auto;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg-1);
+  font-size: 12px; line-height: 1.7;
+}
+.reset-list .keep { color: var(--ok); }
+.reset-list .drop { color: var(--text); }
+
+/* ---------- G21: card collapse/expand (batch cards + chat plan cards) ----------
+   Several batches or several plans in one session stack into a page you have
+   to scroll past to reach anything. Each card folds to its head line.
+
+   One control, two surfaces, on purpose — the same job should not have two
+   different-looking toggles. Absolutely positioned in the card's top-right,
+   which is why both card types are `position: relative` below. */
+.batch-card,
+.chat-plan-card { position: relative; }
+
+.card-fold {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center;
+  /* 28px keeps it a comfortable target even though the glyph is 14px — the
+     same reasoning as the rail resizer's 10px hit area. */
+  width: 28px; height: 28px;
+  padding: 0; border-radius: 8px;
+  border: 1px solid transparent; background: none;
+  color: var(--faint); cursor: pointer;
+  transition: color 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.card-fold:hover {
+  color: var(--text-h);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  border-color: var(--line);
+}
+.card-fold:focus-visible { outline: 2px solid var(--starburst); outline-offset: 2px; }
+/* Points down when open (click to collapse), right when closed (click to
+   expand) — the same convention as the explorer's tree carets. */
+.card-fold-caret { transition: transform 0.2s var(--ease); }
+.card-fold-caret.open { transform: rotate(90deg); }
+
+/* Keep the head clear of the button so a long title never runs under it. */
+.batch-card .migration-card-head,
+.chat-plan-card .chat-plan-head { padding-right: 34px; }
+
+/* Folded, a batch still reports its real counts — including failures. A batch
+   that partially failed must never collapse into something that reads as
+   fine (same rule as batch-status-completed_with_errors). */
+.batch-folded-summary { margin: 6px 0 0; font-size: 12.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card-fold, .card-fold-caret { transition: none; }
 }

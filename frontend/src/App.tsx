@@ -13,6 +13,10 @@ import { Icon, type IconName } from "./Icon";
 import { useTheme } from "./useTheme";
 import "./theme.css";
 import "./index.css";
+import { ResetTargetSchema } from "./ResetTargetSchema";
+import { SHOW_TESTING_TOOLS } from "./featureFlags";
+import { RailResizer } from "./RailResizer";
+import { useRailWidth } from "./useRailWidth";
 
 type Section = "migrations" | "chat" | "intelligence" | "catalog" | "logs";
 
@@ -100,6 +104,9 @@ export default function App() {
   // a decorative "online" badge.
   const [adapterUp, setAdapterUp] = useState<boolean | null>(null);
   const { theme, toggleTheme } = useTheme();
+  // G21 — user-draggable rail width. Only meaningful while the explorer is
+  // open; collapsed, the rail returns to its own --rail-w and this is unused.
+  const rail = useRailWidth();
 
   const refresh = useCallback(() => {
     api
@@ -139,7 +146,19 @@ export default function App() {
   return (
     <MigrationActionsProvider>
       <PreviewProvider>
-      <div className={`shell ${explorerOpen ? "shell-explorer-open" : ""}`}>
+      {/* G21: the drag width is published as --rail-w-explorer rather than as a
+          width style, so the existing grid rule and its media-query overrides
+          keep working unchanged. Applied only while the explorer is open. */}
+      <div
+        className={`shell ${explorerOpen ? "shell-explorer-open" : ""} ${
+          rail.resizing ? "shell-resizing" : ""
+        }`}
+        style={
+          explorerOpen
+            ? ({ "--rail-w-explorer": `${rail.width}px` } as React.CSSProperties)
+            : undefined
+        }
+      >
         <nav className="rail" aria-label="Sections">
           <BrandMark />
 
@@ -185,13 +204,35 @@ export default function App() {
             ))}
           </ul>
 
+          {/* Destructive test helper, placed under the nav items. Absent from
+              the rail entirely unless VITE_TESTING_TOOLS=1 — see
+              featureFlags.ts for why that is a restart-level switch rather
+              than an in-app toggle. */}
+          {SHOW_TESTING_TOOLS && <ResetTargetSchema />}
+
           <div className="rail-foot">
             <button className="rail-item rail-theme" onClick={toggleTheme}>
               <Icon name={theme === "dark" ? "sun" : "moon"} size={17} />
               <span className="rail-label">{theme === "dark" ? "Light" : "Dark"}</span>
             </button>
           </div>
+
         </nav>
+
+        {/* Sibling of the rail, not a child: the rail scrolls its own content,
+            so a handle inside it cannot span the full viewport height. Anchored
+            to .shell and positioned on the rail/content boundary instead.
+            Only while the explorer is open — collapsed, the rail is a fixed
+            icon strip and there is nothing to reveal by widening. */}
+        {explorerOpen && (
+          <RailResizer
+            width={rail.width}
+            resizing={rail.resizing}
+            onStart={rail.startResize}
+            onSetWidth={rail.setWidth}
+            onReset={rail.reset}
+          />
+        )}
 
         <main className="main">
           <header className="topbar">

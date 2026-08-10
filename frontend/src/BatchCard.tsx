@@ -1,5 +1,7 @@
+import { useState } from "react";
 import type { BatchSummary } from "./batchApi";
 import { useSpotlight } from "./useSpotlight";
+import { CardFold } from "./CardFold";
 
 // G3.4 — renders a real Batch's progress/results. Terminal states are
 // "completed" (all items succeeded) and "completed_with_errors" (at least
@@ -11,9 +13,15 @@ export function BatchCard({ label, batch }: { label: string; batch: BatchSummary
   const isTerminal = batch.status === "completed" || batch.status === "completed_with_errors";
   const settledCount = batch.completed_items + batch.failed_items;
   const pct = batch.total_items > 0 ? Math.round((settledCount / batch.total_items) * 100) : 0;
+  // G21 — several batches in one session stack into a very long page. Each
+  // card can be folded to its head line. Local state on purpose: which cards
+  // you have folded is a per-view reading preference, not app state worth
+  // persisting or lifting.
+  const [open, setOpen] = useState(true);
 
   return (
-    <div className={`batch-card card card-spotlight batch-status-${batch.status}`} {...spotlightProps}>
+    <div className={`batch-card card card-spotlight batch-status-${batch.status} ${open ? "" : "card-folded"}`} {...spotlightProps}>
+      <CardFold open={open} onToggle={() => setOpen((o) => !o)} label={`batch ${batch.id}`} />
       <div className="migration-card-head">
         <span
           className={`engine-dot ${batch.status === "completed" ? "lakebridge" : batch.status === "completed_with_errors" ? "batch-error" : "experimental"}`}
@@ -23,6 +31,16 @@ export function BatchCard({ label, batch }: { label: string; batch: BatchSummary
         <span className={`status-pill batch-pill-${batch.status}`}>{batch.status.replace(/_/g, " ")}</span>
       </div>
 
+      {/* Folded, the card still has to tell the truth about outcome — a batch
+          with failures must never collapse into something that reads as fine.
+          The counts stay, including the failure count. */}
+      {!open && (
+        <p className="muted mono batch-folded-summary">
+          {settledCount}/{batch.total_items} settled — {batch.completed_items} ok, {batch.failed_items} failed
+        </p>
+      )}
+
+      <div className="batch-fold-body" style={{ display: open ? "block" : "none" }}>
       <div className="batch-progress-row">
         <div className="batch-progress-bar">
           <div
@@ -73,6 +91,7 @@ export function BatchCard({ label, batch }: { label: string; batch: BatchSummary
           </div>
         </details>
       )}
+      </div>
     </div>
   );
 }

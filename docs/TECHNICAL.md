@@ -2,8 +2,8 @@
 
 **Date:** 2026-07-27 · **Duration:** ~19:33 – 20:53 IST
 **Host:** macOS 26.3.2, Apple Silicon (arm64)
-**Workspace:** `https://<old-workspace>.cloud.databricks.com` (org `7474645525776557`)
-**Identity:** you@example.com
+**Workspace:** `https://<old-workspace>.cloud.databricks.com` (org `<workspace-id>`)
+**Identity:** <user-email>
 **Result:** All objectives met. 30 logged steps, 9 findings, 2 upstream defects found.
 
 > **On screenshots:** no screen captures exist for this session. Everything below is
@@ -259,7 +259,7 @@ databricks current-user me -p lakebridge-eval
 ```json
 {
   "active": true,
-  "emails": [{ "primary": true, "type": "work", "value": "you@example.com" }],
+  "emails": [{ "primary": true, "type": "work", "value": "<user-email>" }],
   "entitlements": [
     { "value": "allow-cluster-create" },
     { "value": "allow-instance-pool-create" }
@@ -654,7 +654,7 @@ databricks metastores current -p lakebridge-eval
 {
   "default_catalog_name": "workspace",
   "metastore_id": "d1b26481-6554-4eca-9d4d-77578124b759",
-  "workspace_id": 7474645525776557
+  "workspace_id": <workspace-id>
 }
 ```
 
@@ -1011,7 +1011,7 @@ Same task, same entry point; only the compute layer differs.
   "max_concurrent_runs": 2,
   "parameters": [
     { "name": "operation_name", "default": "reconcile" },
-    { "name": "install_folder", "default": "/Users/you@example.com/.lakebridge" }
+    { "name": "install_folder", "default": "/Users/<user-email>/.lakebridge" }
   ],
   "environments": [
     {
@@ -1019,7 +1019,7 @@ Same task, same entry point; only the compute layer differs.
       "spec": {
         "client": "3",
         "dependencies": [
-          "/Workspace/Users/you@example.com/.lakebridge/wheels/databricks_labs_lakebridge-0.14.2-py3-none-any.whl"
+          "/Workspace/Users/<user-email>/.lakebridge/wheels/databricks_labs_lakebridge-0.14.2-py3-none-any.whl"
         ]
       }
     }
@@ -1047,7 +1047,7 @@ databricks jobs create --json @out/recon_job_serverless.json -p lakebridge-eval
 ```
 
 ```json
-{ "job_id": 254503333498153 }
+{ "job_id": <reconcile-job-id> }
 ```
 
 ### Register it in the install state
@@ -1071,21 +1071,21 @@ So `state.json` must contain:
       "aggregate_reconciliation_metrics": "01f189cb91e51a74b1cb3aaf1393cf45",
       "reconciliation_metrics": "01f189cb92cf1083aaf3a52f94ce442a"
     },
-    "jobs": { "Reconciliation Runner": "254503333498153" }
+    "jobs": { "Reconciliation Runner": "<reconcile-job-id>" }
   },
   "version": 1
 }
 ```
 
 ```bash
-databricks workspace import /Users/you@example.com/.lakebridge/state.json \
+databricks workspace import /Users/<user-email>/.lakebridge/state.json \
   --file out/state_new.json --format AUTO --overwrite -p lakebridge-eval
 ```
 
 ### First run — config missing, not a compute failure
 
 ```bash
-databricks jobs run-now --json '{"job_id":254503333498153,"job_parameters":{"operation_name":"reconcile"}}' -p lakebridge-eval
+databricks jobs run-now --json '{"job_id":<reconcile-job-id>,"job_parameters":{"operation_name":"reconcile"}}' -p lakebridge-eval
 ```
 
 ```
@@ -1099,7 +1099,7 @@ databricks jobs get-run-output 150867893138633 -p lakebridge-eval
 
 ```
 ResourceDoesNotExist: Path
-(/Users/you@example.com/.lakebridge/recon_config_databricks_lakebridge_demo_all.json)
+(/Users/<user-email>/.lakebridge/recon_config_databricks_lakebridge_demo_all.json)
 doesn't exist.
 ```
 
@@ -1148,11 +1148,11 @@ Mapping file:
 
 ```bash
 databricks workspace import \
-  /Users/you@example.com/.lakebridge/recon_config_databricks_lakebridge_demo_all.json \
+  /Users/<user-email>/.lakebridge/recon_config_databricks_lakebridge_demo_all.json \
   --file out/recon_config_databricks_lakebridge_demo_all.json --format AUTO --overwrite \
   -p lakebridge-eval
 
-databricks jobs run-now --json '{"job_id":254503333498153,"job_parameters":{"operation_name":"reconcile"}}' -p lakebridge-eval
+databricks jobs run-now --json '{"job_id":<reconcile-job-id>,"job_parameters":{"operation_name":"reconcile"}}' -p lakebridge-eval
 ```
 
 ```json
@@ -1316,8 +1316,8 @@ lakebridge_demo                              MANAGED_CATALOG (isolation OPEN)
     ├── main / metrics / details
     └── aggregate_rules / aggregate_metrics / aggregate_details
 
-Job    254503333498153  LAKEBRIDGE_Reconciliation_Runner (serverless)
-Config /Workspace/Users/you@example.com/.lakebridge/{config,reconcile}.yml
+Job    <reconcile-job-id>  LAKEBRIDGE_Reconciliation_Runner (serverless)
+Config /Workspace/Users/<user-email>/.lakebridge/{config,reconcile}.yml
        + state.json, recon_config_databricks_lakebridge_demo_all.json
 ```
 
@@ -1325,7 +1325,7 @@ Config /Workspace/Users/you@example.com/.lakebridge/{config,reconcile}.yml
 
 The reconcile job is **hand-built**. `databricks labs upgrade lakebridge` or a re-run
 of `configure-reconcile` will try to recreate the Lakebridge-managed job and fail on
-the same serverless constraint. It will not touch job `254503333498153`, but it will
+the same serverless constraint. It will not touch job `<reconcile-job-id>`, but it will
 not maintain it either. Re-apply `out/recon_job_serverless.json` after upgrades.
 
 ### Teardown
@@ -1334,7 +1334,7 @@ not maintain it either. Re-apply `out/recon_job_serverless.json` after upgrades.
 DROP CATALOG IF EXISTS lakebridge_demo CASCADE;
 ```
 ```bash
-databricks jobs delete 254503333498153 -p lakebridge-eval
+databricks jobs delete <reconcile-job-id> -p lakebridge-eval
 databricks labs uninstall lakebridge
 ```
 
@@ -1383,7 +1383,7 @@ real Redshift source without touching that working config, a **fully separate** 
   its own `reconcile.yml` (source dialect `redshift`, `uc_connection_name: g14_redshift_conn`)
   and `recon_config_redshift_g14_redshift_conn_all.json`.
 - Separate job `LAKEBRIDGE_G14_Redshift_Reconciliation_Runner` (job_id `843454635342447`,
-  reusing the same manual-serverless-job pattern from §12 — the existing job `254503333498153`
+  reusing the same manual-serverless-job pattern from §12 — the existing job `<reconcile-job-id>`
   was never touched), reusing the existing `lakebridge_demo.reconcile_meta` metadata infra
   (purely additive, tagged by `recon_id`).
 - All local files under `out/g14_redshift_reconcile/` (also untouched: everything under the

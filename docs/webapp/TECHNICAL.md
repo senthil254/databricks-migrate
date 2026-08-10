@@ -87,7 +87,7 @@ it to finish, more on this below).
 
 The user asked for 11 named "agent" roles (like a security reviewer, a
 test writer, a documentation writer) as separate files, matching an
-earlier large specification. These were captured as role definitions during design.
+earlier large specification. These were created in `.claude/agents/*.md`.
 
 **What actually happened:** the files were created correctly, but this
 session's tools couldn't "call" them right away — they only load when a
@@ -418,7 +418,7 @@ independent UI verification was rigorous enough.
 Built as a `/loop` goal with parallel independent build agents per
 sub-area, each followed by independent verification — backend by a
 separate `independent-checker` agent, frontend by the main thread with
-real browser-automation interactions and captured network-request
+real `Claude_Browser` tool interactions and captured network-request
 evidence (not just "the click worked").
 
 **What's real now:**
@@ -1103,3 +1103,208 @@ now 2.4s. The final chip set is unchanged.
 
 The component also renders shimmer placeholders while loading. It previously returned `null`, so the
 strip was absent for the entire wait and read as a failure rather than as loading.
+
+---
+
+## Config loading, credential tests, publishing, and the testing rail item (2026-08-03)
+
+### `app/__init__.py` loads `.env` — and must keep doing so
+
+`databricks_target` resolves configuration at module level, so whether `load_dotenv()` had already
+run decided which workspace the process talked to. Importing `app.databricks_target` before
+`app.main` made every default apply and pointed the app at the *original* workspace, surfacing as
+`Invalid access token` — an error that names the wrong cause. Loading in `app/__init__.py` fixes it
+for every entry point, since nothing under `app.` can be imported without running it.
+
+If you ever move config resolution back into module constants elsewhere, keep this property: import
+order must never decide which Databricks workspace gets written to.
+
+### `backend/tests/credential_leak.py`
+
+The "no credentials in responses" tests read the secret values from the environment instead of
+hardcoding them. They previously asserted on literal password strings copied out of `.env`, which
+put a live credential in the source of a test that exists to prove credentials don't escape. The
+helper skips unset variables and fails if none were checkable, so it cannot pass vacuously.
+
+Related: `test_executor.py`'s fake Databricks tokens are **assembled at runtime**
+(`"dapi" + "1234567890abcdef" * 2`) rather than written as literals. They are invented values, but
+they are token-shaped, and a literal trips GitHub push protection — which pushes people toward
+clicking "allow this secret".
+
+### Publishing
+
+The public repo is built from a staging copy, never the working tree: local docs stay unscrubbed
+while the published copy has emails, workspace ids, hostnames and tunnel hosts replaced with
+placeholders. Excluded from publication: `.env`, `MEMORY.md`, `CLAUDE.md`, `.claude/`, `out/`,
+`logs/`, `data/`, `*.log`, virtualenvs and `node_modules`.
+
+The Lakebridge install (`~/.databricks/labs/lakebridge`, 1.1 GB including its own venv) is a tool
+installation and is never committed; `README.md` documents installing it instead.
+
+### `POST /admin/reset-target-schema`
+
+Drops every object in `DATABRICKS_TARGET_CATALOG.DATABRICKS_TARGET_SCHEMA` except
+`databricks_target.DEMO_KEEP_OBJECTS` (one Redshift table, one Starburst table, `mcp_fallback_ping`
+— the last because `test_databricks_mcp_client.py` asserts it exists and does not create it).
+
+`GET /admin/target-objects` is the read-only preview the UI shows first, so the destructive click is
+never blind. The route cannot reach another schema: its object list comes from the target schema's
+own `information_schema`.
+
+The UI entry point is a `testing` item in the left rail, rendered only when `VITE_TESTING_TOOLS=1`.
+Verified in the live DOM that it is absent — not hidden — without the flag.
+
+---
+
+## The `databricks labs` auth trap, context menus, resizable rail (2026-08-10)
+
+### 13.1 `databricks labs` injects its own auth type and ignores `DATABRICKS_TOKEN`
+
+`databricks labs <x>` is a Go wrapper that spawns the labs project's own Python venv, and it
+**injects `DATABRICKS_AUTH_TYPE=databricks-cli` into that child process**. The child SDK therefore
+resolves credentials through the CLI's stored OAuth session and **ignores a perfectly valid
+`DATABRICKS_TOKEN` present in the same environment**. When the OAuth refresh token expired, every
+Lakebridge-backed migration died with:
+
+```
+default auth: databricks-cli: cannot get access token: Error: A new access token
+could not be retrieved because the refresh token is invalid.
+... Config: host=..., auth_type=databricks-cli
+```
+
+The confusing part is worth stating plainly, because it is what cost the debugging time: **the app's
+own SQL and browse paths kept working the entire time.** They build a `Config()` directly from the
+env PAT and never go through the CLI, so all three `/explore/*` endpoints stayed green while only
+*migrations* failed. The symptom reads as "Databricks is down" when nothing is down and the token is
+fine.
+
+Diagnosis, in the order that actually isolated it:
+
+- `curl` against all three `/explore/*` endpoints (Redshift, Starburst, Databricks) → HTTP 200.
+  No server was down.
+- PAT validated directly against `SCIM/Me` → HTTP 200. The token was valid.
+- `databricks current-user me` with env auth → worked. The Go CLI itself was fine.
+- Reproducing the exact `databricks labs lakebridge transpile ...` argv the executor builds → failed,
+  with `auth_type=databricks-cli` in the error's config dump. That line is the tell: nothing in the
+  app asked for that auth type.
+- The same command with `DATABRICKS_AUTH_TYPE=pat` exported → transpiled with 0 errors.
+
+Fix: `backend/app/executor.py`'s `_subprocess_env()` now sets `DATABRICKS_AUTH_TYPE=pat` when
+`databricks_profile()` is empty **and** `DATABRICKS_TOKEN` is set. A configured profile is
+deliberately left alone — that path is *supposed* to use the config file's credentials, OAuth
+included, and forcing `pat` there would break it.
+
+Verified after the fix: `POST /migrate/redshift/ddl/table/demo_fast_test/orders` returned
+`"status": "completed"` with real transpiled DDL and a real object in the target schema.
+
+### 13.2 Right-click context menus in the data explorer (G20)
+
+`ContextMenu.tsx` previously exported only `useRefreshMenu(onRefresh)`, which hard-coded a single
+"Refresh" item. It now exports a general `useNodeMenu(items: ContextMenuItem[])`; `useRefreshMenu`
+remains as a thin wrapper so every existing call site is untouched.
+
+Every menu item calls **the same handler its inline button already calls**. Nothing was removed — the
+inline `mini-btn`s all remain, and the menu is an additional affordance, not a replacement.
+
+| Node | Items |
+|---|---|
+| schema (Redshift / Starburst) | `Refresh`, `Batch migrate schema` |
+| table / view (Redshift / Starburst) | `Migrate`, `View data`, `Copy data` (Copy data suppressed for views) |
+| routine / UDF | `Migrate`, `View source` |
+| Databricks (read-only target) | `View data` / `View source` only — no migrate, no copy, no batch |
+
+Starburst keeps its two engines as two distinct items and they must never be merged:
+`Migrate` → `onRequestDdlMigrationCustom` (deterministic, seconds) and `Migrate (LLM)` →
+`onRequestDdlMigration` (behind `SHOW_EXPERIMENTAL_STARBURST`, 5+ minutes).
+
+**Four real bugs found during verification** — the valuable part of this work:
+
+1. `onContextMenu` was bound to the inner `.tree-leaf`, but the migrate/eye/copy buttons are
+   *siblings* of it inside `.tree-leaf-row`. Right-clicking that half of a row missed the node menu
+   entirely and bubbled to the panel root's "Refresh". Handler moved to the outer row.
+2. Menu item clicks bubbled into the row's own `onClick`, which opens the preview pane — so
+   "Migrate" would migrate *and* open a preview. Fixed with `e.stopPropagation()` in `ContextMenu`'s
+   item handler.
+3. The root panel's menu rendered inside the `<h3>`, which `index.css:162`
+   (`.sys-section-body .source-panel > h3 { display: none }`) hides in the rail layout — so the menu
+   was invisible. Moved out of the heading. Pre-existing, not introduced by G20.
+4. Redshift menu items lacked the `!selectMode` guard their inline buttons have, offering actions in
+   batch-select mode that no button offered.
+
+Two further corrections: the menu now clamps to the viewport (it previously ran off-screen when
+opened low in the rail), and Starburst's UDF group node gained a `Refresh`. That node had no refresh
+affordance at all, and the root refresh did not clear its state — UDFs were un-refreshable for the
+life of the session.
+
+### 13.3 Resizable left rail (G21)
+
+New `useRailWidth.ts` + `RailResizer.tsx`. The handle is absolutely positioned against `.shell`, at
+`left: var(--rail-w-explorer)` — **not** inside `.rail`, which scrolls its own content and therefore
+cannot host a full-height handle. The width is published as an inline `--rail-w-explorer` custom
+property, so the existing `grid-template-columns: var(--rail-w-explorer) 1fr` rule and its
+media-query overrides keep working unchanged.
+
+Operable by drag, by arrow keys (16px; 64px with Shift), and by double-click or Home to reset to
+372px. Clamped to 240px … `min(900px, 70vw)`, re-clamped on window resize, persisted in
+`localStorage` under `lakebridge.railWidth`.
+
+**This does not replace the explorer's horizontal scrollbar.** `.data-panel-scroll` keeps
+`overflow: auto` on both axes, untouched. Verified: at 636px wide the scrollbar is not needed;
+narrowed to 252px it returns (`scrollWidth 408 > clientWidth 186`). The scrollbar handles one long
+row; the resizer handles a whole schema of long names.
+
+One bug fixed: `preventDefault()` on pointer-down — needed to stop text selection while dragging —
+also suppressed focus, so clicking the handle and then pressing an arrow key did nothing. The handle
+now focuses explicitly.
+
+### 13.4 Collapse/expand toggle on batch cards and chat plan cards (G22)
+
+Several batches, or several chat plans, in one session stack into a page far taller than the
+viewport, so the card being worked on is frequently off-screen. Each card can now be folded down to
+its head line.
+
+`frontend/src/CardFold.tsx` is **one shared control used by both surfaces** — deliberately, because
+two differently-shaped toggles doing the same job is worse than shipping neither. It is an icon-only
+chevron, so it carries a real accessible name that flips with state
+(`"Collapse batch batch_84"` ↔ `"Expand batch batch_84"`) plus `aria-expanded`. Hit area is 28px
+around a 14px glyph — the same reasoning as the rail resizer's ≥10px handle: the glyph is not the
+target.
+
+It is positioned absolutely in the card's top-right, which is why `.batch-card` and
+`.chat-plan-card` are now `position: relative`. The card heads get `padding-right: 34px` so a long
+title cannot run underneath the button.
+
+`BatchCard.tsx` holds a local `open` state. It is a per-view reading preference — not persisted, not
+lifted. Folded, the card keeps its head line, id and status pill, and a summary line that **retains
+the real counts including failures** (e.g. `6/16 settled — 6 ok, 0 failed`). That is deliberate:
+this project's standing rule is that a partially-failed batch must never render as a plain success,
+and collapsing it must not turn it into something that *reads* as fine either.
+
+`ChatPanel.tsx`'s corner toggle reuses the existing `foldedCards` state. Unlike the pre-existing
+footer `Collapse` control, it is **not gated on `foldable`** (which required `execResult` or
+`execError`), so a plan still awaiting confirmation can now be collapsed too. The footer control is
+unchanged and still present.
+
+Verified live against a real Redshift batch (`batch_84`, 16 items) and a real chat migration — not
+mock data:
+
+| Surface | Expanded | Collapsed | Also observed |
+|---|---|---|---|
+| batch card | 177px | 86px | `aria-expanded` false, body `display: none`, per-item detail hidden; re-expands to 177px with per-item detail restored |
+| chat plan card | 231px | 127px | `footerFoldPresent: false` on that card — i.e. still pending, so the new control works exactly where the old one did not appear |
+
+`tsc --noEmit` clean, `vite build` clean.
+
+### 13.5 Test status
+
+Full backend suite: **171 passed, 1 skipped, 1 failed** in 31m28s.
+
+The single failure is `test_reconcile_end_to_end_dispatches_and_polls_real_job_to_completion`:
+Lakebridge reports `Reconcile Job ID not found. Please try reinstalling.` The hardcoded job id
+`<reconcile-job-id>` belongs to the **original eval workspace**; the paid workspace contains exactly one
+job (`demo_validation_job_dev`). This is leftover cutover state, not a regression — the SDK
+authenticates fine and returns a clean `ResourceDoesNotExist`.
+
+Fixing it requires running `configure-reconcile` against the paid workspace using `environments`
+(the workspace is serverless-only), per `docs/RECONCILE.md`. Deliberately left undeployed: reconcile
+is not part of the demo.

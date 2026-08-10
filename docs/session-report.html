@@ -295,7 +295,7 @@ databricks current-user me -p lakebridge-eval</code></pre></div>
 <pre class="out"><code>Profile lakebridge-eval was successfully saved
 {
   "active": true,
-  "emails": [{ "value": "you@example.com" }],
+  "emails": [{ "value": "<user-email>" }],
   "entitlements": [{ "value": "allow-cluster-create" }]
 }</code></pre></div>
       <div class="code"><div class="code-lbl"><span>output — workspace inventory</span></div>
@@ -464,7 +464,7 @@ Error: Not Found
 
 $ databricks metastores current -p lakebridge-eval
 { "metastore_id": "d1b26481-6554-4eca-9d4d-77578124b759",
-  "workspace_id": 7474645525776557 }</code></pre></div>
+  "workspace_id": <workspace-id> }</code></pre></div>
           <p><strong>Not possible:</strong> no account-console API on this tier.</p>
           <p><strong>Not useful either:</strong> Unity Catalog allows one metastore per region
              per account, and catalogs live in the <em>metastore</em>. A second workspace in
@@ -596,11 +596,11 @@ APAC    Initech   7          8487.70</code></pre></div>
 }</code></pre></div>
       <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
 <pre><code>databricks jobs create --json @out/recon_job_serverless.json -p lakebridge-eval
-# -> { "job_id": 254503333498153 }</code></pre></div>
+# -> { "job_id": <reconcile-job-id> }</code></pre></div>
       <p>Then register it where <code>ReconcileRunner._get_recon_job_id</code> looks —
          <code>state.json</code>, key <code>"Reconciliation Runner"</code> exactly:</p>
       <div class="code"><div class="code-lbl"><span>json — state.json</span><button class="copy">Copy</button></div>
-<pre><code>{ "resources": { "jobs": { "Reconciliation Runner": "254503333498153" } },
+<pre><code>{ "resources": { "jobs": { "Reconciliation Runner": "<reconcile-job-id>" } },
   "version": 1 }</code></pre></div>
       <div class="callout"><p>The first run then failed with
         <code>ResourceDoesNotExist: recon_config_databricks_lakebridge_demo_all.json</code>
@@ -834,7 +834,7 @@ recon_id  36d1b2e2ac6b43d29ad51be0a4c87749     duration ~31s</code></pre></div>
            <code>databricks labs upgrade lakebridge</code> or re-running
            <code>configure-reconcile</code> will try to recreate the Lakebridge-managed job and
            fail on the same serverless constraint. It won't touch job
-           <code>254503333498153</code>, but it won't maintain it either — re-apply
+           <code><reconcile-job-id></code>, but it won't maintain it either — re-apply
            <code>out/recon_job_serverless.json</code> after upgrades.</p>
       </div>
     </section>
@@ -874,13 +874,13 @@ databricks labs lakebridge transpile -p lakebridge-eval \
 databricks labs lakebridge configure-reconcile -p lakebridge-eval  # interactive
 
 databricks jobs run-now -p lakebridge-eval \
-  --json '{"job_id":254503333498153,"job_parameters":{"operation_name":"reconcile"}}'</code></pre></div>
+  --json '{"job_id":<reconcile-job-id>,"job_parameters":{"operation_name":"reconcile"}}'</code></pre></div>
 
       <h3>Maintenance and teardown</h3>
       <div class="code"><div class="code-lbl"><span>bash</span><button class="copy">Copy</button></div>
 <pre><code>databricks labs upgrade lakebridge
 databricks labs uninstall lakebridge
-databricks jobs delete 254503333498153 -p lakebridge-eval</code></pre></div>
+databricks jobs delete <reconcile-job-id> -p lakebridge-eval</code></pre></div>
       <div class="code"><div class="code-lbl"><span>sql — destructive, review first</span><button class="copy">Copy</button></div>
 <pre><code>DROP CATALOG IF EXISTS lakebridge_demo CASCADE;</code></pre></div>
 
@@ -911,7 +911,7 @@ databricks jobs delete 254503333498153 -p lakebridge-eval</code></pre></div>
     ├── main / metrics / details
     └── aggregate_rules / aggregate_metrics / aggregate_details
 
-Job  254503333498153  LAKEBRIDGE_Reconciliation_Runner (serverless)</code></pre></div>
+Job  <reconcile-job-id>  LAKEBRIDGE_Reconciliation_Runner (serverless)</code></pre></div>
     </section>
 
     </main>

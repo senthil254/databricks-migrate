@@ -3,7 +3,7 @@ import { usePreview } from "./PreviewPane";
 import { explorerApi, type StarburstTable, type StarburstUdf } from "./explorerApi";
 import { DRAG_MIME, encodeDrag, type DragObject } from "./dragTypes";
 import { SHOW_EXPERIMENTAL_STARBURST } from "./featureFlags";
-import { useRefreshMenu } from "./ContextMenu";
+import { useNodeMenu, useRefreshMenu, type ContextMenuItem } from "./ContextMenu";
 import { Icon } from "./Icon";
 
 // G15 Phase A — small colored per-row-type glyph, mirroring RedshiftTree.
@@ -113,13 +113,50 @@ function DraggableRow({
   onRequestUdfSource?: (name: string) => void;
 }) {
   const { openPreview } = usePreview();
+
+  // G20 — right-click path to the SAME handlers the inline mini-btns below
+  // call. Purely additive: every button stays exactly as it was, and the
+  // conditions here are copied one-for-one from those buttons so the menu
+  // can never offer an action the row doesn't actually support.
+  // NOTE: "Migrate (LLM)" -> onRequestDdlMigration (the slow, experimental
+  // Databricks LLM job) and "Migrate" -> onRequestDdlMigrationCustom (the
+  // deterministic seconds-long translator) are DELIBERATELY separate items.
+  // They are different backends with wildly different runtimes; do not merge.
+  const menuItems: ContextMenuItem[] = [];
+  if (!selectMode && SHOW_EXPERIMENTAL_STARBURST && onRequestDdlMigration) {
+    menuItems.push({ label: "Migrate (LLM)", onSelect: () => onRequestDdlMigration(obj) });
+  }
+  if (!selectMode && onRequestDdlMigrationCustom) {
+    menuItems.push({ label: "Migrate", onSelect: () => onRequestDdlMigrationCustom(obj) });
+  }
+  if (!selectMode && isTable && onRequestDataCopy && obj.catalog) {
+    menuItems.push({
+      label: "Copy data",
+      onSelect: () => onRequestDataCopy(obj.catalog as string, obj.schema, obj.name),
+    });
+  }
+  if (!selectMode && canPreview && onRequestPreview && obj.catalog) {
+    menuItems.push({
+      label: "View data",
+      onSelect: () => onRequestPreview(obj.catalog as string, obj.schema, obj.name),
+    });
+  }
+  if (!selectMode && !isTable && !canPreview && onRequestUdfSource) {
+    menuItems.push({ label: "View source", onSelect: () => onRequestUdfSource(label) });
+  }
+  const { onContextMenu, menuElement } = useNodeMenu(menuItems);
+
   // Deliberately still draggable even when warnReason is set (e.g. UDFs) —
   // the backend's real 400 rejection is meant to be surfaced honestly in
   // the migration card, not hidden by preemptively disabling the drag.
   // Same honesty rule applies to the keyboard "migrate" button below: it's
   // still offered for UDFs, and clicking it hits the same real 400.
   return (
-    <div className="tree-leaf-row">
+    // G20: handler on the OUTER row — the migrate/copy/eye buttons are
+    // siblings of .tree-leaf, so a right-click there would otherwise miss the
+    // menu and bubble to the panel root's "Refresh".
+    <div className="tree-leaf-row" onContextMenu={onContextMenu}>
+      {menuElement}
       <div
         className={`tree-leaf ${warnReason ? "tree-leaf-warn" : ""}`}
         draggable={!selectMode}
@@ -289,7 +326,17 @@ function SchemaNode({
   }, [open, catalog, schema, tables]);
 
   const refresh = () => { setTables(null); setError(null); };
-  const { onContextMenu, menuElement } = useRefreshMenu(refresh);
+  // G20 — right-click offers the same real actions this row's own buttons do.
+  // onRequestSchemaBatch takes TWO args here (catalog, schema) — Starburst
+  // schemas are catalog-qualified, unlike Redshift's.
+  const schemaMenuItems: ContextMenuItem[] = [{ label: "Refresh", onSelect: refresh }];
+  if (onRequestSchemaBatch) {
+    schemaMenuItems.push({
+      label: "Batch migrate schema",
+      onSelect: () => onRequestSchemaBatch(catalog, schema),
+    });
+  }
+  const { onContextMenu, menuElement } = useNodeMenu(schemaMenuItems);
 
   return (
     <div className="tree-node">
@@ -445,6 +492,14 @@ export function StarburstTree({
   const refreshCatalogs = () => { setCatalogs(null); setError(null); };
   const { onContextMenu: onRootContextMenu, menuElement: rootMenuElement } = useRefreshMenu(refreshCatalogs);
 
+  // G20 — the UDF group node had no refresh icon and no context menu at all,
+  // and refreshCatalogs above deliberately does NOT clear `udfs`, so Starburst
+  // UDFs were un-refreshable for the whole session. Setting udfs back to null
+  // re-fires the fetch effect above (its guard is `!udfOpen || udfs !== null`,
+  // so a null value while the node is open re-runs it).
+  const refreshUdfs = () => { setUdfs(null); setError(null); };
+  const { onContextMenu: onUdfContextMenu, menuElement: udfMenuElement } = useRefreshMenu(refreshUdfs);
+
   return (
     <div className="source-panel starburst-panel" onContextMenu={onRootContextMenu}>
       <h3>
@@ -456,8 +511,10 @@ export function StarburstTree({
         )}
         <span className="engine-tag">custom-ddl (deterministic)</span>
         <RefreshControl label="Starburst root (catalogs)" onRefresh={refreshCatalogs} />
-        {rootMenuElement}
       </h3>
+      {/* G20: outside the <h3> — index.css:162 hides that heading in the rail
+          layout, which was swallowing the root's right-click menu. */}
+      {rootMenuElement}
       {error && <p className="error">{error}</p>}
       {catalogs === null && !error && <p className="empty">Loading real catalogs…</p>}
       {catalogs?.map((c) => (
@@ -478,12 +535,16 @@ export function StarburstTree({
       ))}
 
       <div className="tree-node">
-        <button className="tree-toggle" onClick={() => setUdfOpen((o) => !o)}>
-          <span className={`tree-caret ${udfOpen ? "open" : ""}`}>
-            <Icon name="chevron" size={12} />
-          </span>{" "}
-          UDFs (galaxy.functions)
-        </button>
+        <div className="tree-toggle-row" onContextMenu={onUdfContextMenu}>
+          <button className="tree-toggle" onClick={() => setUdfOpen((o) => !o)}>
+            <span className={`tree-caret ${udfOpen ? "open" : ""}`}>
+              <Icon name="chevron" size={12} />
+            </span>{" "}
+            UDFs (galaxy.functions)
+          </button>
+          <RefreshControl label="UDFs (galaxy.functions)" onRefresh={refreshUdfs} />
+          {udfMenuElement}
+        </div>
         {udfOpen && (
           <div className="tree-children">
             {udfs === null && <p className="empty">Loading…</p>}

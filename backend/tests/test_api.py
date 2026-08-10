@@ -83,7 +83,7 @@ def test_reconcile_end_to_end_dispatches_and_polls_real_job_to_completion():
     """G2 finding, closed for real in G4: `reconcile` takes zero CLI flags —
     it dispatches a job that was registered against workspace state by a
     prior `configure-reconcile` run (see docs/RECONCILE.md). That job (id
-    254503333498153) still exists in this workspace as of 2026-08-01, so
+    <reconcile-job-id>) still exists in this workspace as of 2026-08-01, so
     this test exercises the real path rather than a synthetic one.
 
     G2 only proved dispatch; this proves the honesty gap identified there is

@@ -699,3 +699,102 @@ it with named people instead.
 **Something we found while testing:** if you asked it to copy a table that doesn't exist, it
 complained about broken syntax instead of saying "that table isn't there". Confusing, and it was
 writing a nonsense query. Fixed — it now says the real reason.
+
+---
+
+## A few important fixes, and a new "testing" button (2026-08-03)
+
+**The app could quietly talk to the wrong account.** Depending on which file the program loaded
+first, it sometimes used the settings for the *old* Databricks account instead of the new one. The
+error message blamed the password, which sent us looking in completely the wrong place. Now the
+settings are always loaded first, before anything else can read them.
+
+**A test was carrying a real password.** We have tests that check passwords never leak out of the
+app. Awkwardly, those tests had the real password typed into them — so the file meant to prove
+passwords stay secret was the one about to reveal one. They now read the password from the settings
+file at the moment they run, which checks the same thing without writing it down.
+
+**The code is now on GitHub.** It was published from a separate copy, so your own files kept all
+their real details while the public version has them replaced with placeholders. Passwords, keys and
+private notes were left out entirely. GitHub itself blocked our first attempt because a *fake*
+password in a test looked real to its scanner — there was an "ignore this" button, and we didn't
+press it. We changed the fake value instead.
+
+**New: a "testing" button** in the left menu. It clears out the practice objects in Databricks,
+keeping one from each source plus one important helper, so the next thing you migrate is obviously
+new rather than lost in a pile from earlier runs.
+
+Two things about that button worth knowing. It only appears when you start the app in testing mode —
+during a demo it isn't there at all, so it can't be clicked by accident. And pressing it doesn't
+delete anything straight away: it first shows you a list of exactly what will be removed and what
+will be kept, and only the confirm button actually does it.
+
+---
+
+## Right-click, a wider panel, and a migration bug that wasn't what it looked like (2026-08-10)
+
+### Right-click now does something useful
+
+Before, right-clicking anywhere in the object explorer offered exactly one thing: "Refresh". Every
+real action lived as a small button on the row itself — easy to miss, and often scrolled out of
+sight.
+
+Now right-click gives you the same actions, wherever you are:
+
+- right-click a **schema** → Refresh, Batch migrate schema
+- right-click a **table** → Migrate, View data, Copy data
+- right-click a **function or procedure** → Migrate, View source
+- right-click something in the **Databricks** panel → View data only. Databricks is the
+  destination, so the app never writes to it from a right-click menu.
+
+Worth saying plainly: **nothing was taken away.** Every button that was there before is still
+there and still works exactly as it did. Right-click is simply a second route to the same place.
+
+### You can drag the left panel wider
+
+Object names get long. A full name like
+`lakebridge_demo.g3_migrations.redshift_demo_fast_test_orders` didn't fit in the panel, so the end
+of it was just cut off.
+
+There's now a thin handle on the edge between the left panel and the main area. Drag it right to
+widen the panel and read the whole name; drag it left to give the main area more room. It remembers
+the width you picked, even after you close the browser and come back. You can also nudge it with
+the arrow keys, and double-click the handle to snap it back to normal.
+
+The horizontal scrollbar that was already there is untouched and still works — the two do different
+jobs. The scrollbar is the right tool when one single row happens to be unusually long. Dragging
+the panel wider is the right tool when a whole schema is full of long names and you'd otherwise be
+scrolling every row, one at a time.
+
+### Migrations broke, and the cause was not the obvious one
+
+For a while, migrating anything failed with a long red error. It looked exactly like "Databricks is
+down" — but nothing was down. Browsing Redshift, Starburst and Databricks all worked perfectly the
+whole time, which is what made it confusing.
+
+Here's the simple version. The app has two different ways of talking to Databricks. The part that
+*browses* used a password-style key that was perfectly fine. The part that *migrates* goes through
+a separate Databricks tool, and that tool insisted on using a different, older login — one that had
+quietly expired — while ignoring the good key sitting right next to it.
+
+The fix was to tell that tool explicitly which key to use. Migrations work again, and we checked it
+by actually migrating a real table rather than trusting the tests.
+
+**One test is still failing, on purpose.** It covers "reconcile" — a feature that compares two
+tables to confirm a migration copied everything across correctly. Its helper job was set up in the
+old workspace and was never re-created in the new paid one, so the test has nothing to run against.
+Reconcile isn't part of the demo, so we deliberately left it alone rather than half-fixing it.
+
+### Folding away cards you're done with
+
+Run a few batch migrations, or ask the assistant a few things, and the page gets long. Each result
+card is tall, so the one you actually care about ends up somewhere off the bottom of the screen.
+
+Every batch card and every plan card now has a small arrow button in its top-right corner. Click it
+and the card folds down to a single line; click it again and it comes back. Nothing is lost —
+folding only hides it from view.
+
+One deliberate detail: a folded batch card still shows its real numbers, including any failures. So
+a batch where something went wrong still says so plainly (`6/16 settled — 6 ok, 0 failed`) even when
+it's collapsed. Hiding a failure behind a tidy summary is exactly the sort of thing this project has
+refused to do everywhere else, and folding is no exception.

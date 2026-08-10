@@ -121,7 +121,7 @@ opens, you click "approve", and the connection is made.
 **Why this way?** Because no password or secret code is ever typed, stored, or visible
 to anyone. It is the safer method.
 
-**Result:** connected successfully as you@example.com.
+**Result:** connected successfully as <user-email>.
 
 While connected we looked around the account and noticed something important:
 

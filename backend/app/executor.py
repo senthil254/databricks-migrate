@@ -52,7 +52,7 @@ _JAVA_HOME_CANDIDATES = ("/opt/homebrew/opt/openjdk@21", "/usr/local/opt/openjdk
 
 
 def _subprocess_env() -> dict[str, str]:
-    """Build a subprocess env with a working JVM on PATH.
+    """Build a subprocess env with a working JVM on PATH and unambiguous auth.
 
     `shutil.which("java")` is not enough to decide this: on macOS,
     `/usr/bin/java` frequently exists and is executable but is only a stub
@@ -60,6 +60,29 @@ def _subprocess_env() -> dict[str, str]:
     installed system-wide. Existence on PATH does not mean it works, so we
     unconditionally prefer a known-good Homebrew keg-only JDK by prepending
     it — that's a no-op if none of the candidates exist.
+
+    G21 — the auth half. `databricks labs <x>` is a Go wrapper that spawns the
+    labs project's own Python venv, and it injects `DATABRICKS_AUTH_TYPE=
+    databricks-cli` into that child. The child SDK then resolves auth through
+    the CLI's stored OAuth session and *ignores a perfectly valid
+    `DATABRICKS_TOKEN` sitting in the same environment*. When the OAuth refresh
+    token expires, every Lakebridge call dies with
+
+        default auth: databricks-cli: cannot get access token:
+        ... the refresh token is invalid ... auth_type=databricks-cli
+
+    while the app's own SQL/browse paths keep working, because those build a
+    Config() directly from the env PAT and never go through the CLI. That
+    split is exactly why this looks like "Databricks is down" when it isn't.
+
+    So: when we are in the no-profile/PAT configuration (see
+    databricks_profile()), say so explicitly. `auth_type=pat` is the SDK's own
+    documented selector; pinning it stops the wrapper from downgrading us to a
+    stale OAuth session. Verified live: with it unset the transpile above
+    fails, with it set the same command transpiles with 0 errors.
+
+    A configured profile is left completely alone — that path is *supposed* to
+    use the config file's credentials, OAuth included.
     """
     env = dict(os.environ)
     for candidate in _JAVA_HOME_CANDIDATES:
@@ -68,6 +91,8 @@ def _subprocess_env() -> dict[str, str]:
             env["JAVA_HOME"] = candidate
             env["PATH"] = f"{java_bin}:{env.get('PATH', '')}"
             break
+    if not databricks_profile() and env.get("DATABRICKS_TOKEN"):
+        env.setdefault("DATABRICKS_AUTH_TYPE", "pat")
     return env
 
 

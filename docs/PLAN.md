@@ -2,8 +2,8 @@
 
 **Date:** 2026-07-27
 **Machine:** macOS 26.3.2, arm64 (Apple Silicon)
-**Workspace:** `<old-workspace>.cloud.databricks.com` (org `7474645525776557`)
-**Identity (via MCP):** you@example.com
+**Workspace:** `<old-workspace>.cloud.databricks.com` (org `<workspace-id>`)
+**Identity (via MCP):** <user-email>
 **Primary source of truth:** https://databrickslabs.github.io/lakebridge/docs/installation/
 
 ---
@@ -150,7 +150,7 @@ Each step: purpose → command → expected → verify → rollback → est.
 *Purpose:* establish workspace identity for the CLI.
 *Command:* `databricks auth login --host https://<old-workspace>.cloud.databricks.com`
 *Expected:* browser opens, you approve, profile written to `~/.databrickscfg`
-*Verify:* `databricks current-user me` returns you@example.com
+*Verify:* `databricks current-user me` returns <user-email>
 *Rollback:* `databricks auth logout` / remove the profile
 *Est:* 2 min
 

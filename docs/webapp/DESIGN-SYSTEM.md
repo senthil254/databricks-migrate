@@ -29,6 +29,9 @@ what's in a component, the rule wins — change the component.
    The claim was false — real source was available the whole time. Before concluding an engine
    can't do something, try the alternatives, and if a fallback is genuinely needed, label it
    unmistakably as reconstructed.
+7. **A resize affordance does not replace a scrollbar.** `.data-panel-scroll` keeps
+   `overflow: auto` on both axes regardless of pane width: the scrollbar handles one over-long
+   row, the resizer handles many. Removing either is a regression.
 
 ## Theming contract
 
@@ -121,6 +124,29 @@ Scale: `11.5px` uppercase labels (`.14em` tracking, 700) · `13px` small/meta ·
 - Any wide content (tables, code, diagrams) scrolls inside its own container. The page body
   never scrolls horizontally.
 
+## Resizable panes
+
+- A user-resizable pane publishes its width as a **CSS custom property that the existing layout
+  rule already consumes** — here, inline `--rail-w-explorer` on `.shell`, read by
+  `grid-template-columns: var(--rail-w-explorer) 1fr`. Never replace the layout rule with an
+  inline `width`; that breaks the media-query overrides.
+- The drag handle is positioned against the **non-scrolling** ancestor (`.shell`), never inside
+  the scrolling pane. A handle inside a scroller cannot stay pinned across the full viewport
+  height.
+- Hit area ≥`10px` wide even when the visible grip is a `1–2px` line. A hairline grabbable only on
+  its exact pixel is the classic failure of this control.
+- Every drag control is also keyboard-operable: `role="separator"`, `aria-orientation`,
+  `aria-valuenow`/`aria-valuemin`, `tabIndex={0}`, arrow keys for fine steps, Shift+arrow for
+  coarse, plus a reset (Home and double-click).
+- `preventDefault()` on pointer-down suppresses focus — call `.focus()` explicitly or the keyboard
+  path is unreachable after a mouse grab.
+- Clamp to a minimum **and** a viewport-relative maximum, and re-clamp on window resize. A width
+  stored on a wide monitor must not strand the work area on a small one.
+- Disable layout transitions while dragging (`.shell-resizing { transition: none }`) or the pane
+  visibly lags the cursor. Set `user-select: none` app-wide for the duration.
+- Persist the chosen size (`localStorage`), and tolerate storage being unavailable without
+  breaking the drag.
+
 ## Repeating patterns
 
 ### Card
@@ -155,6 +181,52 @@ Circular `54px` node, `background: var(--bg-2)`, `1px` border in the stage's sta
 centred icon. Connector between nodes is a `2px` rail using `--grad` at `.35` opacity; the
 completed portion is full-opacity. Active node pulses. Stage states map to `--ok` / `--running` /
 `--failed` / `--queued`.
+
+### Context menu
+
+`ContextMenu.tsx` exports `useNodeMenu(items: ContextMenuItem[])` returning
+`{ onContextMenu, menuElement }`. `useRefreshMenu(onRefresh)` is a thin wrapper for the
+Refresh-only case.
+
+- A right-click menu offers the **same actions** as the row's inline buttons, calling the **same
+  handlers**, under the **same guard conditions**. A menu item that appears when its button would
+  not is a defect.
+- Menus are **additive**. Never remove an inline control because a menu now offers it.
+- `onContextMenu` goes on the **outer** row element (`.tree-leaf-row`), not the inner label
+  (`.tree-leaf`). The action buttons are siblings of the inner element, so a handler on it misses
+  half the row's clickable area and the event bubbles to the panel root.
+- `useNodeMenu`'s handler calls both `preventDefault()` and `stopPropagation()`. The
+  `stopPropagation` is load-bearing: without it a leaf-row menu also opens the panel root's menu
+  behind it.
+- `ContextMenu`'s item `onClick` calls `stopPropagation()` too, because the menu renders inside a
+  row whose own `onClick` opens the preview pane.
+- The menu clamps to the viewport — measured in `useLayoutEffect`, then repositioned. A
+  `position: fixed` menu at raw `clientX`/`clientY` runs off-screen when opened near an edge.
+- `ContextMenuItem` has no `disabled`, no separators, no submenus. If an action does not apply,
+  omit the item.
+
+### Card fold
+
+`CardFold.tsx` — the collapse/expand affordance in a card's top-right corner. Used by `BatchCard`
+and the chat plan card.
+
+- **One shared control across surfaces.** Two differently-shaped toggles doing the same job is
+  worse than shipping neither. A new foldable card reuses this, it does not grow its own.
+- Positioned **absolutely, top-right**, so the card must be `position: relative` and its head needs
+  `padding-right` (34px) — otherwise a long title runs underneath the button.
+- Hit area **28px** around a 14px glyph. The glyph is not the target.
+- An icon-only control **must** carry a real accessible name that flips with state
+  (`"Collapse batch batch_84"` ↔ `"Expand …"`) plus `aria-expanded`. A bare chevron is a mystery
+  glyph to a screen reader.
+- Caret points **down when open, right when closed** — the same convention as the explorer's tree
+  carets. Do not invert it per-surface.
+- **A collapsed card still tells the truth.** Fold a card that reports failures and the failure
+  count stays visible in the summary line. Collapsing must never turn a partial failure into
+  something that reads as fine.
+- Fold state is **view-local** — not persisted, not lifted. It is a reading preference, unlike the
+  rail width, which is a deliberate layout choice worth remembering.
+- Body is **display-toggled, not unmounted**, so folding never discards fetched content or restarts
+  a poll.
 
 ## Icons
 
@@ -344,3 +416,22 @@ type-checks nothing and exits 0. The real check is `npx tsc -b`, which is what
   native block. Now a quiet caret + label matching the `▾ Output` disclosure.
   Note: `display: inline-flex` was not enough — the card is a stretched flex
   column, so it needed `align-self: flex-start; width: fit-content`.
+- 2026-08-10 · G20 context menus · `ContextMenu.tsx` generalised to
+  `useNodeMenu(items)`; `useRefreshMenu` kept as a wrapper so no call site
+  changed. Right-click now offers a row's real actions (batch migrate on a
+  schema; migrate / view data / copy data on a table) calling the same handlers
+  as the inline buttons, which all remain. Menu clamps to the viewport. Four
+  bugs fixed — handler moved to `.tree-leaf-row`, item clicks no longer bubble
+  into the row's preview `onClick`, the root menu escaped the `display: none`
+  `<h3>`, and menu items gained the `!selectMode` guard their buttons have.
+- 2026-08-10 · G21 resizable rail · `RailResizer.tsx` + `useRailWidth.ts`. The
+  rail publishes an inline `--rail-w-explorer` consumed by the existing grid
+  rule; handle is anchored to `.shell`, not the scrolling `.rail`. Drag, arrow
+  keys (Shift = coarse), double-click/Home reset, 240px…min(900px, 70vw) clamp,
+  `localStorage` persistence. `.data-panel-scroll` deliberately untouched — the
+  scrollbar and the resizer solve different problems.
+- 2026-08-10 · G22 card fold · `CardFold.tsx` — one shared collapse/expand control in the top-right
+  of both `.batch-card` and `.chat-plan-card` (both now `position: relative`, heads padded 34px).
+  Icon-only with a state-flipping `aria-label` + `aria-expanded`, 28px hit area. A folded batch card
+  keeps its real counts including failures. Fold state is view-local. The chat card's pre-existing
+  footer `Collapse` is unchanged; the corner control additionally works on a still-pending plan.

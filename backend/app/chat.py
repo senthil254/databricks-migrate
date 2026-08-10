@@ -1,6 +1,6 @@
 """G6 backend — natural-language chat layer: instruction -> reviewable plan
 -> confirm -> execute via the *same* real adapter functions G1-G5 already
-proved safe. See PLAN.md's G6 row and the project's ordering rule (chat only
+proved safe. See PLAN.md's G6 row and CLAUDE.md's ordering rule (chat only
 gains real execution power over things already proven safe).
 
 Design decision on NL parsing (recorded here, not just in a commit
@@ -12,7 +12,7 @@ with a fixed SQL-in/SQL-out, Workspace-folder job contract, not a
 general-purpose chat/intent classifier, and there is no verified way to
 hand it a free-text instruction and get back a structured
 `{action, args}` decision. Inventing that contract would itself be the
-"unverified capability" this project prohibits. Instead this module does
+"unverified capability" CLAUDE.md prohibits. Instead this module does
 honest, deterministic pattern matching: a small fixed verb vocabulary
 (migrate/transpile/convert, copy+data, reconcile/validate,
 batch-migrate+schema) plus matching against the REAL current object
@@ -66,7 +66,7 @@ preferred whenever a real object can be resolved). A literal `select ...`
 fragment is instead passed to `databricks_target.execute()`, but ONLY
 after `_is_safe_select_fragment` rejects anything that isn't a single
 plain SELECT (no `;`-chained statements, no DML/DDL keywords anywhere) —
-matching the project's "never run unsanitised SQL" rule.
+matching CLAUDE.md's "never run unsanitised SQL" rule.
 """
 from __future__ import annotations
 
@@ -344,7 +344,7 @@ def _find_matching_databricks_table(text: str) -> tuple[str, object]:
 
 def _is_safe_select_fragment(sql: str) -> bool:
     """Only a single, plain SELECT is ever allowed through to
-    `databricks_target.execute()` — matches the project's "never run
+    `databricks_target.execute()` — matches CLAUDE.md's "never run
     unsanitised SQL" rule. Rejects anything with a second `;`-separated
     statement or any DML/DDL keyword anywhere in the text (not just at the
     start), erring toward refusal."""

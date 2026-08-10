@@ -5,7 +5,7 @@ holds the two concrete, previously-untested regressions found during that
 review:
 
 1. `backend/.env` must never become tracked by git — a manual grep before
-   every commit has been the process so far (see README.md); this makes it
+   every commit has been the process so far (see CLAUDE.md); this makes it
    an automated, permanent check instead of relying on memory.
 2. `copy_redshift_table_data` (the `/migrate/redshift/data/{schema}/{table}`
    path) previously interpolated `schema`/`table` straight from the URL

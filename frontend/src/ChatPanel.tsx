@@ -10,6 +10,7 @@ import { STATUS_META } from "./statusMeta";
 import { ObjectChips, type RoutineRef } from "./ObjectChips";
 import { Icon } from "./Icon";
 import { Collapsible, ScrollBox } from "./Collapsible";
+import { CardFold } from "./CardFold";
 
 // G6 — chat-style UI over the real /chat/plan -> /chat/execute contract.
 // Every plan is a review artifact only (never auto-executed); execution
@@ -393,6 +394,15 @@ export function ChatPanel() {
                   : "done";
               return (
               <div className={`chat-plan-card ${folded ? "folded" : ""}`}>
+                {/* G21 — corner toggle, mirroring the batch cards. Unlike the
+                    footer control below it is NOT gated on `foldable`: a long
+                    transcript is worth collapsing whatever state a plan is in,
+                    including one still awaiting confirmation. */}
+                <CardFold
+                  open={!folded}
+                  onToggle={() => setFoldedCards((prev) => ({ ...prev, [m.id]: !prev[m.id] }))}
+                  label={`plan: ${describeAction(m.plan.action)}`}
+                />
                 <div className="chat-plan-head">
                   <span className="eyebrow">Proposed plan</span>
                   <h4 className="chat-plan-title">{describeAction(m.plan.action)}</h4>

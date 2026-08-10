@@ -373,3 +373,94 @@ def object_exists(name: str) -> bool:
             # If we can't tell, don't claim it exists — fall through to a real
             # migration rather than wrongly reporting "already migrated".
             return False
+
+
+# ---------------------------------------------------------------- demo reset
+#
+# Repeated testing fills the target schema with migrated objects, which makes a
+# demo confusing: you cannot tell what the migration you just ran produced from
+# what a previous test left behind. This resets the schema to a known small
+# baseline — one object from each source plus the MCP probe function — so the
+# next migration is visibly new.
+#
+# The three kept names are the demo baseline: a Redshift table, a Starburst
+# table, and mcp_fallback_ping (which tests/test_databricks_mcp_client.py
+# asserts exists and does NOT create, so dropping it would break that test).
+DEMO_KEEP_OBJECTS = (
+    "redshift_demo_fast_test_customers",
+    "starburst_mcp2ohio_test_writes_churn_metrics",
+    "mcp_fallback_ping",
+)
+
+
+def list_target_objects() -> list[dict]:
+    """Every table/view and routine in the configured target schema, tagged with
+    whether the reset would keep or drop it. Read-only: this is what the UI
+    shows BEFORE anything is dropped, so a destructive click is never blind."""
+    schema_lit = TARGET_SCHEMA.replace("'", "''")
+    out: list[dict] = []
+    with _conn_lock:
+        rows = execute(
+            f"SELECT table_name, table_type FROM {TARGET_CATALOG}.information_schema.tables "
+            f"WHERE table_schema = '{schema_lit}' ORDER BY table_name"
+        )
+        for name, ttype in rows:
+            out.append({
+                "name": name,
+                "kind": "VIEW" if str(ttype).upper() == "VIEW" else "TABLE",
+                "keep": name in DEMO_KEEP_OBJECTS,
+            })
+        routines = execute(
+            f"SELECT routine_name, routine_type FROM {TARGET_CATALOG}.information_schema.routines "
+            f"WHERE routine_schema = '{schema_lit}' ORDER BY routine_name"
+        )
+        for name, rtype in routines:
+            out.append({
+                "name": name,
+                "kind": str(rtype).upper() or "FUNCTION",
+                "keep": name in DEMO_KEEP_OBJECTS,
+            })
+    return out
+
+
+def reset_target_schema() -> dict:
+    """Drop everything in the target schema except DEMO_KEEP_OBJECTS.
+
+    Scoped to TARGET_CATALOG.TARGET_SCHEMA and nothing else — it cannot reach
+    another schema, because the object list it works from is itself read from
+    that schema's information_schema. Every dropped object is reproducible by
+    re-running the migration that created it, which is what makes this safe to
+    offer as a button.
+    """
+    objects = list_target_objects()
+    dropped, failed = [], []
+    for obj in objects:
+        if obj["keep"]:
+            continue
+        name = _ident(obj["name"])
+        fq = f"{TARGET_CATALOG}.{TARGET_SCHEMA}.{name}"
+        kind = obj["kind"]
+        stmt = {
+            "VIEW": f"DROP VIEW IF EXISTS {fq}",
+            "PROCEDURE": f"DROP PROCEDURE IF EXISTS {fq}",
+            "FUNCTION": f"DROP FUNCTION IF EXISTS {fq}",
+        }.get(kind, f"DROP TABLE IF EXISTS {fq}")
+        try:
+            execute(stmt)
+            dropped.append({"name": obj["name"], "kind": kind})
+        except Exception as exc:  # noqa: BLE001
+            failed.append({"name": obj["name"], "kind": kind, "error": redact(str(exc))[:200]})
+
+    remaining = list_target_objects()
+    kept = [o["name"] for o in remaining]
+    # A kept baseline object that isn't there was already gone before the reset;
+    # say so rather than implying the reset removed it.
+    missing = [n for n in DEMO_KEEP_OBJECTS if n not in kept]
+    return {
+        "catalog": TARGET_CATALOG,
+        "schema": TARGET_SCHEMA,
+        "dropped": dropped,
+        "failed": failed,
+        "kept": kept,
+        "missing_baseline": missing,
+    }

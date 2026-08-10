@@ -3,7 +3,7 @@
 **Run date:** 2026-07-27
 **Host:** macOS 26.3.2 / arm64
 **Workspace:** `<old-workspace>.cloud.databricks.com`
-**Identity:** you@example.com
+**Identity:** <user-email>
 **Structured log:** `logs/run-20260727T194005.jsonl`
 
 ---
@@ -15,7 +15,7 @@
 | 1 | Network to GitHub / Maven Central / PyPI | ✅ PASS | all HTTP 200 |
 | 2 | Databricks CLI installed | ✅ PASS | `Databricks CLI v1.9.0` |
 | 3 | Java 21+ installed | ✅ PASS | `OpenJDK 21.0.12` |
-| 4 | CLI authenticated | ✅ PASS | `current-user me` → you@example.com |
+| 4 | CLI authenticated | ✅ PASS | `current-user me` → <user-email> |
 | 5 | Workspace reachable | ✅ PASS | 5 catalogs, 1 warehouse, 0 clusters |
 | 6 | Lakebridge installed | ✅ PASS | `v0.14.2` |
 | 7 | Labs venv Python in range | ✅ PASS | `3.12.13` (range 3.10.1–3.14.x) |
@@ -195,7 +195,7 @@ The Snowflake-specific constructs I planted (`FLATTEN`, `DIV0`, `LISTAGG`,
 | Java | OpenJDK 21.0.12 | `/opt/homebrew/opt/openjdk@21` |
 | Labs venv Python | 3.12.13 | `~/.databricks/labs/lakebridge/state/venv` |
 | CLI profile | `lakebridge-eval` | `~/.databrickscfg` (OAuth) |
-| Lakebridge config | — | `/Workspace/Users/you@example.com/.lakebridge/config.yml` |
+| Lakebridge config | — | `/Workspace/Users/<user-email>/.lakebridge/config.yml` |
 
 `~/.zshrc` gained `JAVA_HOME` + PATH entries for openjdk@21.
 

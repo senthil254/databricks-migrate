@@ -1,6 +1,6 @@
 // Thin client for the real backend built in G1/G2 (backend/app/main.py).
 // No mocking — every call here hits the real FastAPI adapter, which is the
-// only thing allowed to invoke the Lakebridge CLI (see README.md).
+// only thing allowed to invoke the Lakebridge CLI (see CLAUDE.md).
 
 import { API_BASE as BASE } from "./apiBase";
 export type RunStatus = "queued" | "running" | "completed" | "failed";

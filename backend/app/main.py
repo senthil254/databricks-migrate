@@ -27,6 +27,7 @@ from .connectors import starburst as starburst_conn
 from .connectors.databricks_browse import BrowseError
 from .connectors.redshift import ConnectorError as RedshiftError
 from .connectors.starburst import ConnectorError as StarburstError
+from . import databricks_target
 from .databricks_target import TargetError, preview_table
 from .executor import run_command_async
 from .models import RunStatus, batch_store, migration_store, store
@@ -35,7 +36,7 @@ app = FastAPI(title="Lakebridge Adapter", version="0.2.0-g3.1")
 
 # G3: the frontend dev server (Vite, localhost:5173) needs cross-origin
 # access to this API (localhost:8811). Scoped to localhost dev ports only —
-# this is a local single-user tool, not a public API (see README.md: no
+# this is a local single-user tool, not a public API (see CLAUDE.md: no
 # auth model exists yet, add one only when a phase actually needs it).
 #
 # Overridable via ALLOWED_ORIGINS (comma-separated) so serving the UI from a
@@ -751,5 +752,44 @@ def databricks_preview(catalog: str, schema: str, table: str, limit: int = 100) 
     try:
         columns, rows = preview_table(catalog, schema, table, limit=limit)
         return {"columns": columns, "rows": [list(r) for r in rows], "row_count": len(rows)}
+    except TargetError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+
+# ---------------------------------------------------------------- demo reset
+#
+# Repeated testing fills the migration target schema, so you can no longer tell
+# what the migration you just ran produced from what earlier tests left behind.
+# These two routes reset it to a small known baseline.
+#
+# Scoped to the configured DATABRICKS_TARGET_CATALOG.DATABRICKS_TARGET_SCHEMA
+# and nothing else — the object list comes from that schema's own
+# information_schema, so it cannot reach another schema. Everything it drops is
+# reproducible by re-running the migration that created it.
+#
+# GET first, POST second, deliberately: the UI shows exactly what would be
+# dropped before offering the button, so the destructive click is never blind.
+
+
+@app.get("/admin/target-objects")
+def admin_target_objects() -> dict:
+    """What is in the target schema right now, and what a reset would keep."""
+    try:
+        objects = databricks_target.list_target_objects()
+    except TargetError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return {
+        "catalog": databricks_target.TARGET_CATALOG,
+        "schema": databricks_target.TARGET_SCHEMA,
+        "objects": objects,
+        "keep_names": list(databricks_target.DEMO_KEEP_OBJECTS),
+    }
+
+
+@app.post("/admin/reset-target-schema")
+def admin_reset_target_schema() -> dict:
+    """Drop every object in the target schema except the demo baseline."""
+    try:
+        return databricks_target.reset_target_schema()
     except TargetError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
