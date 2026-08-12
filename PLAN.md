@@ -73,7 +73,7 @@ systems, not assumed:**
   schemas/catalogs + scalar UDFs only.
 
 **Real credentials:** `backend/.env` (gitignored, `chmod 600`). Connects to
-a real Redshift cluster (`redshift-cluster-1`, db `dev`) and a real
+a real Redshift cluster (`<cluster-identifier>`, db `dev`) and a real
 Starburst Galaxy catalog (`mcp2ohio`). **User should rotate these
 credentials** — they were pasted into chat before being moved to the local
 file, so they're in this session's transcript.

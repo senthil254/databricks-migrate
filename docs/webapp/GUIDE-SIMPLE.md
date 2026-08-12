@@ -798,3 +798,36 @@ One deliberate detail: a folded batch card still shows its real numbers, includi
 a batch where something went wrong still says so plainly (`6/16 settled — 6 ok, 0 failed`) even when
 it's collapsed. Hiding a failure behind a tidy summary is exactly the sort of thing this project has
 refused to do everywhere else, and folding is no exception.
+
+### Turning off the meter: making the Redshift cluster throwaway (2026-08-12)
+
+One of the three systems this app reads from — Amazon Redshift — costs money simply for existing.
+It charges while it is switched on, and it *still* charges for storage even when it is paused. If a
+demo slips by a week, that is a week of paying for a database nobody is looking at.
+
+So we made it disposable.
+
+Everything the demo needs from Redshift — the tables, every row in them, and all the little
+functions — is now saved as plain SQL files kept alongside the code. That means the cluster can be
+deleted completely. When the next demo comes round, you create a fresh one, run a single command,
+and about a minute later the source data is back exactly as it was. Nothing is paid for in between.
+
+It is a small amount of data on purpose: 7 tables, 39 rows in total, 5 functions and 1 stored
+procedure, across the two demo schemas. Small enough to restore in seconds, real enough to migrate.
+
+**We generated those files from the real database rather than writing them by hand.** That matters:
+a hand-written copy slowly stops matching reality, and you only find out when it fails in front of an
+audience.
+
+**And we actually tested the restore, rather than assuming it would work.** That was worth doing,
+because it failed the first time — and would have failed in front of you. Redshift refuses to create
+a function unless you tell it one extra detail about how the function behaves, and the code that
+produced our SQL did not include it. **All five functions would have been missing.** Reading the
+files would never have revealed it; only running them did. It is fixed, and the whole thing has now
+been rebuilt from scratch on a real cluster and checked end to end — every table, every row count,
+and every function called to confirm it returns the right answer.
+
+**One thing you have to do by hand.** When you create a new cluster, its address changes, so the app
+needs to be told the new one (a single line in a settings file) and restarted. Skip it and the app
+reports a confusing "Server refuses SSL" error, which is the same unhelpful message it gives when
+the cluster is merely paused — it almost never has anything to do with SSL.

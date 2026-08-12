@@ -191,3 +191,58 @@ lsof -ti:8811,5173 | xargs kill
 
 Check for stale servers before trusting any browser result — an old process on 5173 will happily
 serve a previous build, including one started in the other mode.
+
+---
+
+## 10. If the Redshift cluster was destroyed
+
+The Redshift cluster is **disposable on purpose** — it bills while running and still charges storage
+while paused, so it is destroyed between demos. The two demo schemas live in version control as SQL.
+
+Full runbook: `scripts/redshift-demo/README.md`. The short version:
+
+**1. Create a new Redshift cluster**, then point `backend/.env` at it:
+
+```
+REDSHIFT_HOST=<new-cluster-endpoint>
+REDSHIFT_PORT=5439
+REDSHIFT_DATABASE=dev
+REDSHIFT_USER=<user>
+REDSHIFT_PASSWORD=<password>
+```
+
+The endpoint hostname **changes every time you recreate the cluster**. This is the one step that
+cannot be automated, and forgetting it is the most likely thing to go wrong.
+
+**2. Restore the demo source data:**
+
+```bash
+backend/.venv/bin/python scripts/restore_redshift_demo.py
+```
+
+Replays 29 statements — 7 tables (39 rows), 5 functions and 1 stored procedure across
+`demo_fast_test` and `demo_schema_test` — then verifies object and row counts, so a partial restore
+fails loudly instead of leaving the demo half-populated. About a minute.
+
+**3. Restart the backend.** It reads `.env` at import, so a running server keeps using the old host.
+
+### Diagnosing `Server refuses SSL`
+
+That message is the Redshift driver's generic error and does **not** mean what it says. The two real
+causes:
+
+| Cause | Tell |
+|---|---|
+| Cluster is **paused** | raw socket returns `FATAL 57P03: You can't connect to your cluster while it is paused` |
+| `REDSHIFT_HOST` is **stale** after a recreate | DNS fails, or the endpoint answers as a different cluster |
+
+Note the failure is Redshift-only: Starburst and Databricks browsing keep working, so the app looks
+partly healthy rather than plainly broken.
+
+### Regenerating the fixture
+
+Only if the demo data itself changed, and only while the cluster is up:
+
+```bash
+backend/.venv/bin/python scripts/dump_redshift_demo.py
+```

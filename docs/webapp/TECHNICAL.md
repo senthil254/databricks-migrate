@@ -1308,3 +1308,57 @@ authenticates fine and returns a clean `ResourceDoesNotExist`.
 Fixing it requires running `configure-reconcile` against the paid workspace using `environments`
 (the workspace is serverless-only), per `docs/RECONCILE.md`. Deliberately left undeployed: reconcile
 is not part of the demo.
+
+### Making the Redshift cluster disposable (2026-08-12)
+
+The cluster bills while running and still charges storage while paused, so the two demo schemas are
+now captured as re-runnable SQL and the cluster is destroyed between demos.
+
+`scripts/dump_redshift_demo.py` generates `scripts/redshift-demo/{01_schemas,02_tables,03_data,
+04_functions}.sql`; `scripts/restore_redshift_demo.py` replays them and verifies. Captured:
+`demo_fast_test` (customers 10, orders 10, payments 8, products 6, regions 5; 5 functions +
+`sp_top_customers`) and `demo_schema_test` (departments 5, employees 5) — **39 rows, 7 tables,
+6 routines, 29 statements**. `public` (TICKIT) and `pg_auto_copy` are deliberately out of scope.
+
+Everything is read from the live cluster — `SHOW TABLE` for DDL, real rows for the INSERTs — so the
+restore cannot drift from what the app was actually demoed against. It is a dump tool, not a fixture
+author.
+
+**Two defects, both found only by replaying the dump rather than inspecting it.**
+
+1. **Redshift requires a volatility clause on `CREATE FUNCTION`**:
+
+   ```
+   42P13: create function must specify volatility attribute (IMMUTABLE|STABLE|VOLATILE)
+   ```
+
+   `connectors/redshift.get_function_ddl` does not emit one. That is harmless in its original job —
+   it feeds the transpiler, which does not care — but fatal on restore: **all five functions would
+   have failed on a fresh cluster.** The dump now reads the real value from `pg_proc.provolatile`
+   and injects it between the `RETURNS` and `AS $$` clauses. `add_volatility` raises rather than
+   guessing if it cannot find the insertion point.
+
+2. **`sp_top_customers` is plpgsql whose body contains semicolons inside `$$ … $$`.** Splitting the
+   file on `;` tears the procedure in half and produces syntax errors that look like a corrupt dump.
+   `restore_redshift_demo.split_statements` tracks dollar-quoted blocks, single-quoted strings
+   (including `''` escapes) and `--` comments. The same hazard applies to GUI SQL editors, which the
+   README warns about.
+
+Also fixed in the value renderer: `date.isoformat()` takes no `sep` argument — only `datetime` does
+— so the `isinstance` checks test `datetime` **before** `date`, since `datetime` subclasses `date`.
+String literals double embedded apostrophes rather than backslash-escaping, because Redshift's
+default `standard_conforming_strings` treats a backslash as a literal character.
+
+**Verification.** Replayed end to end into throwaway schemas (`rtest_fast`, `rtest_schema`) on the
+live cluster: 29 statements, 0 errors, all 7 tables at expected row counts, all 6 routines created.
+Every function and the procedure were then *executed* — `f_customer_tenure(2021)` → 5,
+`f_discounted_total(200, 10)` → 180.0, `f_is_active(2023)` → true, `f_revenue_score(50000)` → 2,
+`f_tenure_years(2020)` → 6, `CALL sp_top_customers(100)` → 10 rows — proving the bodies are valid and
+not merely syntactically creatable. Throwaway schemas were dropped and the real schemas re-verified.
+
+**Operational note.** The cluster endpoint hostname changes on every recreate, so `REDSHIFT_HOST` in
+`backend/.env` must be updated and the backend restarted. Until then the driver reports
+`Server refuses SSL` — the identical misleading message a *paused* cluster produces, and the reason
+that error should always be diagnosed by opening a raw socket rather than trusted at face value.
+Separately, `sp_top_customers` creates `demo_fast_test.top_customers` as an output; it is not part
+of the fixture and is absent after a fresh restore until the procedure is called.
