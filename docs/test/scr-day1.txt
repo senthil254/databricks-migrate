@@ -1,0 +1,227 @@
+Good vening everyone , today we are going to discuss about big data fundamentals and databricks . It's all about theoretical part of it 
+Slide 1: Three modules,
+Let’s take a quick look at what are the main topics we are going to cover today . 
+Big data fundamentals , Introduction to databricks , Databricks Architechture
+We’ll start with Big Data itself: what it means, why it matters, and why conventional approaches sometimes struggle with its scale, speed, and variety.
+Once that foundation is clear, we’ll introduce Databricks and see how the Lakehouse brings engineering, analytics, machine learning, and AI together.
+Finally, we’ll go behind the scenes and explore how Databricks works, including Spark, compute, Delta Lake, layers in dabataricks and Unity Catalog.
+So, we’ll move step by step from the problem, to the platform, and finally to the architecture.”
+ 
+Slide 2:
+In the next set of slides we will talk about big data fundamentals 
+ 
+Why Big data?
+Think about how much data we create every day through our phones, applications, online purchases, smart devices, factory sensors, and business systems.
+Across the world, we’re producing hundreds of millions of terabytes of data every day. Billions of connected devices are also generating data continuously, often in real time.
+But collecting data alone doesn’t create value. The important question is: can we store it, understand it, trust it, and use it quickly enough?
+Organizations that can do that are better positioned to understand their customers, improve operations, make faster decisions, and build modern AI applications.
+That is the real reason Big Data matters.”
+ 
+ 
+Slide3:what the term ‘Big Data’ actually means.”
+“Now that we understand why it matters, let’s clarify what the term ‘Big Data’ actually means.”
+It doesn’t simply mean having a very large file. Data becomes ‘big’ when our existing systems can no longer store, process, or analyse it efficiently enough for the required business outcome.
+There are three simple ways to understand this slide.
+The data might be too large for one machine. It might arrive too quickly for occasional batch processing. Or it might come in too many different formats, such as tables, JSON, text, images, and video.
+In practice, we often experience all three challenges together.
+Why does this matter? Because buying one increasingly powerful server is not a sustainable solution. Instead, we distribute the storage and processing across multiple resources.
+This is the problem that modern platforms such as Databricks are designed to address.”
+ 
+Slide4:
+In this slide we will see the five v's of big data 
+ 
+“A simple way to understand Big Data is through the five Vs shown here.
+Firstly ,  we have Volume: how much data are we dealing with?
+Next is Velocity: how quickly is that data arriving, and how soon we need to process it?
+Then there is Variety. Data no longer comes only in neat tables. It can also be JSON, logs, text, images, audio, or video.
+The fourth V is Veracity, which asks whether we can actually trust the data. Is it accurate, complete, and consistent, or does it contain errors and noise?
+The final V is Value. Even if we have enormous amounts of fast-moving data, it is useful only when it helps us make decisions or achieve a meaningful result.
+This slide matters because Big Data is not simply about size. It is about managing all five of these challenges together.”
+ 
+Slide 5:conventional vsBig Data
+ 
+“This slide compares conventional and Big Data processing approaches.
+Conventional systems primarily process predictable, structured data using relational databases and predefined schemas.
+Big Data systems support larger and more diverse datasets using distributed, parallel processing.
+They are primarily designed to scale out across multiple resources and support flexible schema strategies.
+The distinction is not absolute. Both approaches can use distributed infrastructure, schemas, and SQL.
+The comparison explains why technologies such as Spark and the Databricks Lakehouse are used for modern data workloads.”
+ 
+Slide 6: challenges of big data . 
+ 
+“This slide presents six common Big Data challenges.
+Big Data sounds powerful, but working with big data is not automatically easy.
+Data must be stored reliably and affordably.
+Processing must meet business performance requirements.
+Different systems, formats, and sources must be integrated.
+Data quality must be maintained so analytics and AI remain trustworthy.
+With respect to additional attributes like Access, privacy, governance, and compliance must be controlled.
+Finally, organizations must manage technical skills, operational complexity, and cost.
+These challenges explain the need for a scalable, governed platform such as Databricks.”
+ 
+Slide 7: Big data ecosystem 
+ 
+“This slide shows the journey that data takes before it becomes useful.
+We start on the left with the places where data is created: applications, databases, sensors, IoT devices, and system logs.
+Next, we need to bring that data into the platform. This is ingestion, and it can happen in scheduled batches or continuously through streaming.
+Once it arrives, we store it in a scalable location, such as cloud storage using Delta Lake.
+Then comes processing. This is where we use Spark or SQL to clean the data, remove duplicates, combine sources, and prepare it for use.
+After that, analysts, data scientists, and machine-learning teams can explore the data and produce insights.
+Finally, those insights reach users through dashboards, reports, applications, or models.
+The first three are about capturing and moving the data. The last three are about refining it and using it. Same flow is followed, almost every platform."
+ 
+Slide 8: Big data in real world 
+Big data used in some of the industry like retail , finance, healthcaree , and manufacturing industryu 
+ 
+“So far, we’ve discussed Big Data as a technical concept. This slide shows what it looks like in everyday business.
+Retail uses customer, sales, and inventory data for recommendations and demand forecasting.
+Financial institutions use transaction data for fraud detection, credit risk, and regulatory reporting.
+Healthcare and life sciences use clinical, claims, device, and genomic data for patient insights, population health, and drug discovery.
+Manufacturers use sensor and operational data for predictive maintenance, quality improvement, and supply-chain optimization.
+The use cases differ, but each requires scalable processing, trusted data, analytics, AI, and governance.
+These are core capabilities provided by Databricks.”
+ 
+In the next set of slides we will talk about some of the concepts involved in databricks
+Slide9: what is databricks
+ 
+“We’ve discussed the challenges of Big Data. Now let’s look at the platform designed to help address many of them.
+Databricks gives data engineers, analysts, data scientists, machine-learning engineers, and governance teams a shared environment for working with data and AI.
+The four boxes show the main idea.
+Data engineers can ingest, clean, and transform data through reliable pipelines.
+Analysts can use SQL for reporting, dashboards, and business intelligence.
+Data scientists and AI teams can explore data and build, track, and deploy models.
+At the same time, governance helps ensure that people have appropriate access and that data remains discoverable, traceable, and controlled.
+Why does this matter? Without a unified platform, these activities often happen in separate tools and create duplicated data and disconnected workflows.
+Databricks brings those teams and workloads together around the same trusted data.”
+ 
+ 
+Slide 11: Lakehouse : Best of both worlds
+ 
+“To understand Databricks, we first need to understand the Lakehouse.
+A data warehouse is very good at organizing trusted, structured data for SQL, reporting, and dashboards. 
+But it was not originally designed for every kind of raw data or machine-learning workload.
+A data lake takes the opposite approach. It can store almost any data at a large scale and relatively low cost. 
+But without good management, it can become difficult to trust, organize, and query.
+The Lakehouse brings those two ideas together.
+It keeps the flexibility and openness of a data lake while adding the reliability and management features we expect from a warehouse. Delta Lake helps provide capabilities such as ACID transactions, schema enforcement, and version history.
+Why this slide is important?  engineers, and data scientists can work from a shared data foundation instead of constantly moving data between separate lake and warehouse platforms.”
+ 
+Slide 12: One platform , every data persona 
+ 
+“This slide shows four personas supported by Databricks.
+Data engineers build pipelines.
+Analysts use SQL and BI tools.
+Data scientists explore data and develop models.
+ML engineers deploy and monitor models.
+They work through the Databricks Data Intelligence Platform using technologies such as Spark, Delta Lake, MLflow, and Unity Catalog.
+The platform connects them to a shared, governed data foundation on cloud storage.
+The purpose is to improve collaboration and reduce disconnected data workflows.”
+ 
+Slide 13: Databricks core commponents
+ 
+“This slide introduces five foundational Databricks components.
+The Workspace supports collaborative development, jobs, SQL, and dashboards.
+Apache Spark and Photon process data at scale.
+Delta Lake provides reliable tables with transactions and schema controls.
+MLflow manages the machine-learning and AI lifecycle.
+Unity Catalog provides governance, access control, auditing, and lineage.
+Together, these components provide development, compute, transactional data management, AI lifecycle management, and governance.”
+ 
+Slide 14: Key benefits of databricks
+ 
+“This slide brings together the main reasons organizations consider Databricks.
+First, it gives engineers, analysts, and AI teams a more connected place to work instead of making them move constantly between isolated tools.
+It also uses open technologies and formats, which makes the data more accessible to other tools. That reduces dependency, although it does not remove every form of vendor or cloud dependency.
+Compute can scale according to demand, so teams do not always need to maintain the same amount of capacity.
+People can share notebooks, code, data, and results through common workspaces.
+Unity Catalog helps answer important questions: Who can access this data? Where did it come from? And now how the data being used?
+Finally, storage and compute can scale separately, giving organizations more control over spending.
+ 
+Slide 15: In next set of slide we will talk about databricks architechture 
+ 
+“This slide shows the high-level Databricks architecture.
+Users connect through the UI, notebooks, APIs, SQL clients, and BI tools.
+The Databricks-manages compute and control plane.
+ control plane handles workspace services, orchestration, compute management, and governance metadata.
+The compute plane processes the data.
+Classic compute runs in the customer’s cloud account. Serverless compute is managed by Databricks.
+In a typical Spark cluster, the driver coordinates the job and workers execute tasks.
+Data is stored separately, commonly as Delta Lake tables in cloud object storage.
+This separation enables independent management of 
+platform services, compute, and storage.”
+ 
+Slide 16: How Apache spark runs a job 
+ 
+“This slide shows what happens after we write Spark code.
+First, we describe the transformations we want, such as filtering, joining, or grouping data. 
+Spark usually waits until we request an actual result before it begins the work.
+The driver then looks at the complete request and builds an execution plan. It breaks that plan into stages and smaller tasks.
+The cluster manager provides the computing resources, 
+and executor processes it and run on the worker machines. 
+The driver sends tasks to those executors, 
+which process those different data partitions at the same time.
+The output might appear in our notebook, return as a small result, or be written to a Delta table.
+Why is this important? Spark becomes powerful by dividing a large problem into smaller pieces that can run in parallel. But simply adding more executors is not always enough; the data and workload must also be organized for effective parallel processing.”
+In Databricks:
+1. You write Python, SQL, Scala, or R code in a notebook.
+2. The Spark driver creates an execution plan.
+3. Spark divides the data into partitions.
+4. Workers process the partitions in parallel.
+5. The output is displayed or written to a table.
+ 
+ 
+ 
+Slide 17: Delta lake : reliability on the data lake 
+ 
+“A regular data lake can contain many files, but files alone do not automatically behave like a reliable database table. Delta Lake helps solve that problem.
+The actual records are stored mainly in Parquet files. 
+Delta Lake then adds the _delta_log, 
+which keeps track of valid files, table structure, and committed changes.
+This log gives us several useful capabilities.
+Transactions ensure users do not see half-completed updates. 
+Time travel lets us inspect earlier table versions, as long as the required history is still retained.
+Schema enforcement helps stop incorrectly structured data from entering the table. 
+When the structure genuinely needs to change, schema evolution provides a controlled way to update it.
+The same table can also support both scheduled batch processing and continuous streaming.
+Why is this important? Delta Lake keeps the flexibility of cloud storage while making the data more reliable and manageable.”
+ 
+Slide 18: clusters : the engines you turn on and off 
+ 
+“This slide explains Databricks compute options available to us .
+“This slide explains where the actual processing power in Databricks comes from.
+For exploration and development, we can use interactive compute. We start it, connect a notebook, test code, 
+and continue using it while we work. 
+Auto-termination can be switched off after a period of inactivity.
+For scheduled pipelines, job compute is usually a better fit. 
+Databricks starts the resources for the job run and shuts them down when the run is complete.
+Autoscaling allows classic compute to move between a minimum and maximum number of workers. 
+It can add capacity during demanding periods and remove workers when less capacity is needed.
+We can also choose between classic and serverless compute. 
+Classic gives us more control over infrastructure. 
+Serverless removes much of that management because Databricks provisions and scales the resources.
+Why does this matter? The best compute choice depends on whether the workload is interactive, scheduled, highly customized, or designed for minimal infrastructure management.”
+ 
+ 
+ 
+Slide 19: Unity catalog : one layer of security & governance
+ 
+“This slide answers a simple but important question: how do we keep data controlled and understandable as more people begin using it?
+Unity Catalog organizes assets using three levels. We start with a catalog, then a schema, and finally the actual object. So for example here main is the catalog, sales is the schema, and orders is the table or view.
+Unity Catalog then adds governance around those objects.
+It helps control who can access data and, where needed, which rows or columns they can see.
+When comes to data lineage , It records supported lineage, showing where data came from and which reports, jobs, or tables depend on it.
+Audit records , it help us to investigate who accessed or changed governed assets and when.
+Search and discovery it helps users to find trusted information without relying on tribal knowledge.
+This slide matters because data becomes more useful when people can find it, understand it, and use it securely.”
+ 
+Slide 20: End to end from raw source to insight 
+ 
+“This slide puts everything we’ve discussed into one picture.
+We begin on the left with data coming from databases, applications, files, sensors, or streaming systems.
+The first destination is usually the Bronze layer. Here, we preserve the data close to its original form so that we retain history and can reprocess it later if needed.
+Next is Silver. This is where we clean the data, remove duplicates, correct types, handle errors, and combine related sources.
+Gold is where the data becomes easier for the business to use. It may contain sales summaries, customer metrics, operational KPIs, or datasets prepared for analytics and AI.
+ Databricks platform performs the work,
+ Delta Lake keeps the tables reliable, and Unity Catalog controls and tracks the governed assets.
+Why is this slide important? It shows that an insight is not created in one step. It is the result of an entire trusted data journey.”
+
