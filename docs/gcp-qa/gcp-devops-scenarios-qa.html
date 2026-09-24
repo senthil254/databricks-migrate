@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GCP DevOps Scenarios</title>
+  <style>
+    :root { --ink:#20252b; --muted:#5d6670; --line:#dfe3e8; --card:#fff; --bg:#f5f7f9; --red:#c43d31; --green:#176b4c; --yellow:#fff5d9; --blue:#1a5fb4; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+    main { max-width:900px; margin:auto; padding:28px 20px 60px; }
+    header { border-bottom:3px solid var(--ink); margin-bottom:24px; padding-bottom:18px; }
+    h1 { margin:0 0 8px; font-size:clamp(28px,5vw,44px); line-height:1.1; }
+    h2 { border-bottom:1px solid var(--line); margin:40px 0 14px; padding-bottom:7px; font-size:25px; }
+    h3 { margin:26px 0 7px; font-size:18px; }
+    h3 .qn { display:inline-block; min-width:40px; color:var(--blue); }
+    p { max-width:75ch; margin:8px 0 12px; }
+    ul, ol { max-width:75ch; padding-left:25px; }
+    li { margin:6px 0; }
+    a { color:var(--blue); }
+    .tag { color:var(--red); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px 18px; margin:14px 0; }
+    .good { border-left:4px solid var(--green); }
+    .warn { background:var(--yellow); border-left:4px solid #c28a16; }
+    .toc ul { columns:2; column-gap:28px; margin:8px 0 0; }
+    .toc li { break-inside:avoid; }
+    code { background:#edf0f3; border-radius:4px; padding:2px 5px; font-size:.92em; overflow-wrap:anywhere; }
+    pre code { overflow-wrap:normal; }
+    .code-box { position:relative; margin:14px 0; }
+    .code-box .lang { position:absolute; top:12px; right:88px; color:#9aa6b4; font:700 11px/1 ui-monospace,Menlo,monospace; letter-spacing:.08em; text-transform:uppercase; }
+    pre { background:#20252b; color:#ffffff; padding:18px 92px 18px 16px; border-radius:7px; overflow:auto; margin:0; font:14px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; tab-size:2; }
+    pre code { background:transparent; color:#ffffff; padding:0; }
+    .copy-button { position:absolute; top:9px; right:9px; border:1px solid #8995a3; border-radius:5px; background:#ffffff; color:#20252b; padding:7px 11px; font-weight:700; cursor:pointer; }
+    .copy-button:hover, .copy-button:focus { background:#dce9ff; border-color:#2874d0; }
+    .copy-status { color:var(--muted); display:block; font-size:13px; margin-top:5px; min-height:20px; }
+    .small { color:var(--muted); font-size:14px; }
+    .scen { background:#eef4fb; border-left:4px solid var(--blue); }
+    .lbl { font-weight:700; margin:14px 0 2px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-size:13px; }
+    footer { border-top:1px solid var(--line); margin-top:34px; padding-top:15px; color:var(--muted); font-size:13px; }
+    @media (max-width:600px) { .toc ul { columns:1; } .code-box .lang { display:none; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="tag">Scenario round · 19 questions</div>
+    <h1>Google Cloud DevOps Engineer — Scenario Q&amp;A</h1>
+    <p>Real-world scenarios with theory and code together, for the Custom Application Architect / Google Cloud Engineer (CL9) role.</p>
+  </header>
+
+  <div class="card toc">
+    <strong>Sections</strong>
+    <ul><li><a href="#s1">1. Terraform Incidents</a></li><li><a href="#s26">2. Pipeline Failures</a></li><li><a href="#s50">3. Production Outages</a></li><li><a href="#s75">4. Security Scenarios</a></li><li><a href="#s96">5. Multi-Cloud and AI Scenarios</a></li><li><a href="#s119">6. Cost and Operations</a></li><li><a href="#s134">7. Behavioural Scenarios</a></li></ul>
+  </div>
+
+  <div class="card good">
+  <strong>How to answer a scenario question</strong>
+  <ul>
+    <li><strong>Clarify</strong> — restate the problem and ask one or two sharp questions.</li>
+    <li><strong>Diagnose</strong> — say what you would check first, and why.</li>
+    <li><strong>Fix</strong> — give the immediate fix, then the long-term fix.</li>
+    <li><strong>Prevent</strong> — name the guardrail, test or alert that stops it happening again.</li>
+    <li>Example values: project <code>acme-app-prod</code>, region <code>europe-west2</code>.</li>
+  </ul>
+  </div>
+  <h2 id="s1">1. Terraform Incidents</h2>
+  <h3 id="s1"><span class="qn">S1</span> Two engineers ran <code>terraform apply</code> at the same time and state looks corrupted.</h3>
+  <div class="card scen"><strong>Scenario:</strong> A developer ran apply from a laptop while the pipeline was also applying. Now <code>plan</code> wants to recreate resources that already exist.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>The GCS backend locks state, but only if everyone uses the <strong>same backend</strong>. A laptop with local state bypasses the lock.</li>
+    <li>Resources exist in GCP but are missing from state, so Terraform thinks it must create them.</li>
+    <li>GCS object versioning on the state bucket lets you roll back to a known-good state.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Freeze all applies (disable the pipeline) and tell the team.</li>
+    <li>List state versions and restore the last good one.</li>
+    <li>Run <code>plan</code> and <code>import</code> anything that exists in GCP but not in state.</li>
+    <li>Long term: remove human write access to the state bucket; only the pipeline SA can apply.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code># 1. List older versions of the state file
+gcloud storage ls --all-versions gs://acme-tfstate-prod/app/default.tfstate
+
+# 2. Restore a known-good generation
+gcloud storage cp \
+  "gs://acme-tfstate-prod/app/default.tfstate#1727170000123456" \
+  gs://acme-tfstate-prod/app/default.tfstate
+
+# 3. Check what Terraform now thinks
+terraform plan -input=false</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code># 4. Adopt anything that exists in GCP but is missing from state
+import {
+  to = google_cloud_run_v2_service.orders
+  id = "projects/acme-app-prod/locations/europe-west2/services/orders-api"
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s2"><span class="qn">S2</span> A module upgrade wants to destroy and recreate a production database.</h3>
+  <div class="card scen"><strong>Scenario:</strong> You bumped the Cloud SQL module from v3 to v4. The plan shows <code>-/+ destroy and then create replacement</code> for the prod instance.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>Replacement usually happens because a resource <strong>address</strong> changed (renamed or moved into a <code>for_each</code>) or because a <strong>ForceNew</strong> attribute changed.</li>
+    <li>Read the plan: <code># forces replacement</code> marks the attribute that triggers it.</li>
+    <li>An address change can be fixed with <code>moved</code> blocks. A ForceNew change needs a migration plan.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Never apply. Add <code>prevent_destroy</code> so a mistake can't delete the database.</li>
+    <li>If the address changed, add a <code>moved</code> block and re-plan until it shows zero replacements.</li>
+    <li>If an attribute forces replacement, pin the old value or plan a proper migration (replica, promote, cut over).</li>
+  </ul>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>moved {
+  from = module.db.google_sql_database_instance.this
+  to   = module.db.google_sql_database_instance.main["orders"]
+}
+
+resource "google_sql_database_instance" "main" {
+  for_each = var.instances
+
+  name             = each.key
+  database_version = "POSTGRES_16"
+  region           = var.region
+
+  deletion_protection = true
+
+  settings {
+    tier = each.value.tier
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code># Fail the pipeline if the plan would delete anything in prod
+terraform show -json tfplan \
+  | jq -e '[.resource_changes[] | select(.change.actions | index("delete"))] | length == 0' \
+  || { echo "Plan deletes resources - manual approval required"; exit 1; }</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s3"><span class="qn">S3</span> Someone changed a firewall rule in the console. How do you find and fix drift?</h3>
+  <div class="card scen"><strong>Scenario:</strong> An engineer opened port 22 to <code>0.0.0.0/0</code> in the console "just for a minute". Nobody reverted it.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li><strong>Drift</strong> is when real infrastructure no longer matches code.</li>
+    <li><code>terraform plan</code> detects drift for resources Terraform manages.</li>
+    <li>Cloud Audit Logs show <strong>who</strong> changed it and <strong>when</strong>.</li>
+    <li>Org policies and firewall policies can block the risky change in the first place.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Run <code>plan</code> — Terraform will show the rule reverting. Apply to restore the coded state.</li>
+    <li>Check audit logs to find the actor and talk to them.</li>
+    <li>Add a nightly drift pipeline and an alert on console changes to firewalls.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code>gcloud logging read \
+  'protoPayload.methodName:"compute.firewalls" AND protoPayload.authenticationInfo.principalEmail!~"gserviceaccount.com$"' \
+  --project acme-app-prod \
+  --freshness 7d \
+  --format 'table(timestamp, protoPayload.authenticationInfo.principalEmail, protoPayload.methodName, protoPayload.resourceName)'</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code># Alert whenever a human changes a firewall rule
+resource "google_logging_metric" "human_firewall_change" {
+  name   = "human-firewall-change"
+  filter = &lt;&lt;-EOT
+    protoPayload.methodName:"compute.firewalls"
+    AND NOT protoPayload.authenticationInfo.principalEmail:"gserviceaccount.com"
+  EOT
+
+  metric_descriptor {
+    metric_kind = "DELTA"
+    value_type  = "INT64"
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h2 id="s26">2. Pipeline Failures</h2>
+  <h3 id="s4"><span class="qn">S4</span> The Azure DevOps pipeline fails with <code>Permission 'iam.serviceAccounts.getAccessToken' denied</code>.</h3>
+  <div class="card scen"><strong>Scenario:</strong> The Terraform pipeline worked yesterday. Today the auth step fails with the error above.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>With Workload Identity Federation, ADO's OIDC token is exchanged at Google STS, then the pipeline <strong>impersonates</strong> a service account.</li>
+    <li>This error means the federated identity lacks <code>roles/iam.workloadIdentityUser</code> on the SA, or the <strong>attribute condition</strong> no longer matches.</li>
+    <li>Common causes: the ADO service connection was renamed (the <code>sub</code> claim changes), or someone removed the IAM binding.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Decode the OIDC token's <code>sub</code> claim and compare it with the provider's <code>attribute_condition</code>.</li>
+    <li>Check IAM on the service account.</li>
+    <li>Fix the binding in Terraform, not by hand.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code># Decode the token claims (in a debug step - never print the full token)
+cut -d. -f2 "$(Agent.TempDirectory)/oidc.jwt" | base64 -d 2&gt;/dev/null | jq '{iss, sub, aud}'
+
+# Who can impersonate the deployer SA?
+gcloud iam service-accounts get-iam-policy \
+  tf-deployer@seed-project.iam.gserviceaccount.com \
+  --format json | jq '.bindings[] | select(.role=="roles/iam.workloadIdentityUser")'</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>resource "google_service_account_iam_member" "ado_wif" {
+  service_account_id = google_service_account.tf_deployer.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.ado.name}/subject/sc://acme/platform/gcp-prod"
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s5"><span class="qn">S5</span> Pipelines are slow — a <code>terraform plan</code> takes 25 minutes.</h3>
+  <div class="card scen"><strong>Scenario:</strong> One root module manages 1,800 resources across networking, IAM and apps.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>Plan time grows with the number of resources, because Terraform refreshes each one through the API.</li>
+    <li>API rate limits add retries.</li>
+    <li>A large blast radius also makes every change risky.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Split into layers with separate state: <code>org</code>, <code>network</code>, <code>iam</code>, <code>apps/&lt;name&gt;</code>.</li>
+    <li>Share values between layers with outputs and <code>terraform_remote_state</code> or data sources.</li>
+    <li>Run layers in parallel in ADO when they don't depend on each other.</li>
+    <li>Cache providers and use <code>-parallelism</code> for the heavy layers.</li>
+  </ul>
+  <div class="code-box"><span class="lang">YAML</span><button class="copy-button" type="button">Copy</button><pre><code>stages:
+  - stage: Foundation
+    jobs:
+      - job: network
+        steps:
+          - template: templates/tf-apply.yml
+            parameters: { layer: network }
+
+  - stage: Workloads
+    dependsOn: Foundation
+    jobs:
+      - job: orders
+        steps:
+          - template: templates/tf-apply.yml
+            parameters: { layer: apps/orders }
+      - job: payments # runs in parallel with orders
+        steps:
+          - template: templates/tf-apply.yml
+            parameters: { layer: apps/payments }</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s6"><span class="qn">S6</span> A secret was printed in the pipeline log.</h3>
+  <div class="card scen"><strong>Scenario:</strong> A developer added <code>echo $DB_URL</code> for debugging. The connection string, including the password, is now in the build log.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>Treat the secret as <strong>compromised</strong> as soon as it's exposed. Deleting the log doesn't undo that.</li>
+    <li>ADO masks secret variables, but not values built from them (such as a URL containing the password).</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Rotate the password immediately and add the new version in Secret Manager.</li>
+    <li>Disable the old secret version and restart consumers.</li>
+    <li>Delete the pipeline run's logs, and check who viewed or downloaded them.</li>
+    <li>Prevent: register derived values as secret, and add a secret scanner (gitleaks) to PR checks.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code># Rotate: add a new version, then disable the old one
+NEW_PASS=$(openssl rand -base64 24)
+gcloud sql users set-password app --instance orders-db --password "$NEW_PASS"
+printf '%s' "$NEW_PASS" | gcloud secrets versions add orders-db-password --data-file=-
+gcloud secrets versions disable 7 --secret orders-db-password</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">YAML</span><button class="copy-button" type="button">Copy</button><pre><code># Mark a derived value as secret so ADO masks it
+- script: |
+    DB_URL="postgresql://app:$(DB_PASSWORD)@10.10.0.5/orders"
+    echo "##vso[task.setvariable variable=DB_URL;issecret=true]$DB_URL"
+  displayName: Build connection string (masked)</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h2 id="s50">3. Production Outages</h2>
+  <h3 id="s7"><span class="qn">S7</span> After a deploy, Cloud Run returns 503 errors for 30% of requests.</h3>
+  <div class="card scen"><strong>Scenario:</strong> The new revision is live at 100% traffic. Latency is high and some requests fail with 503.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>A 503 on Cloud Run often means no instance could take the request: cold starts, <code>max-instances</code> reached, or the container failing its startup probe.</li>
+    <li>High latency plus 503 during a traffic spike points to scaling limits or slow startup.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li><strong>Mitigate first:</strong> route traffic back to the previous revision (seconds).</li>
+    <li>Then diagnose: check instance count against <code>max-instances</code>, the startup probe, and container logs.</li>
+    <li>Fix: set <code>min-instances</code> for warm capacity, raise <code>max-instances</code>, tune concurrency, make startup faster.</li>
+    <li>Prevent: canary releases with automatic rollback on error rate.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code># Roll back in one command
+PREV=$(gcloud run revisions list --service orders-api --region europe-west2 \
+  --format 'value(metadata.name)' --sort-by '~metadata.creationTimestamp' --limit 2 | tail -1)
+gcloud run services update-traffic orders-api --region europe-west2 --to-revisions "${PREV}=100"</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>resource "google_cloud_run_v2_service" "orders" {
+  name     = "orders-api"
+  location = "europe-west2"
+
+  template {
+    scaling {
+      min_instance_count = 2
+      max_instance_count = 50
+    }
+
+    max_instance_request_concurrency = 40
+
+    containers {
+      image = var.image
+
+      startup_probe {
+        http_get {
+          path = "/healthz"
+        }
+        initial_delay_seconds = 2
+        period_seconds        = 3
+        failure_threshold     = 10
+      }
+
+      resources {
+        cpu_idle          = false # CPU always allocated - faster request handling
+        startup_cpu_boost = true
+      }
+    }
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s8"><span class="qn">S8</span> GKE pods are stuck in <code>CrashLoopBackOff</code> after a release.</h3>
+  <div class="card scen"><strong>Scenario:</strong> The <code>orders</code> deployment rolled out, and new pods restart every few seconds.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li><code>CrashLoopBackOff</code> means the container starts, then exits or fails its liveness probe, and Kubernetes backs off between restarts.</li>
+    <li>Common causes: a missing env variable or secret, a bad config, a liveness probe that fires before the app is ready, or OOMKilled.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Pause the damage: <code>kubectl rollout undo</code>.</li>
+    <li>Read <code>describe</code> events and the <strong>previous</strong> container's logs.</li>
+    <li>Check the exit code — <code>137</code> usually means OOMKilled, so raise memory limits.</li>
+    <li>Prevent: readiness gates plus <code>maxUnavailable: 0</code> so bad pods never replace good ones.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code>kubectl -n orders rollout undo deployment/orders-api
+
+kubectl -n orders get pods -l app=orders-api
+kubectl -n orders describe pod &lt;pod-name&gt; | sed -n '/Last State/,/Ready/p'
+kubectl -n orders logs &lt;pod-name&gt; --previous --tail=100</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">YAML</span><button class="copy-button" type="button">Copy</button><pre><code>spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    spec:
+      containers:
+        - name: api
+          startupProbe: # gives slow starters time before liveness kicks in
+            httpGet: { path: /healthz, port: 8080 }
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /ready, port: 8080 }
+            periodSeconds: 5</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s9"><span class="qn">S9</span> A whole region is degraded. How does your design survive it?</h3>
+  <div class="card scen"><strong>Scenario:</strong> <code>europe-west2</code> has a partial outage. The business wants the app back within 15 minutes (RTO) and at most 5 minutes of data loss (RPO).</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li><strong>RTO</strong> = how fast you recover; <strong>RPO</strong> = how much data you can lose.</li>
+    <li>Stateless tiers (Cloud Run, GKE) can run active-active in two regions behind a global load balancer.</li>
+    <li>The data tier sets the RPO: Cloud SQL cross-region replica (async, seconds of lag), or Spanner multi-region (RPO 0).</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Deploy the app to <code>europe-west2</code> and <code>europe-west1</code> behind a <strong>Global External Application Load Balancer</strong> with serverless NEGs.</li>
+    <li>Cloud SQL primary in west2, cross-region read replica in west1; promote it in a DR runbook.</li>
+    <li>Practise failover every quarter — an untested DR plan isn't a plan.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>locals {
+  regions = ["europe-west2", "europe-west1"]
+}
+
+resource "google_compute_region_network_endpoint_group" "run" {
+  for_each = toset(local.regions)
+
+  name                  = "orders-neg-${each.key}"
+  region                = each.key
+  network_endpoint_type = "SERVERLESS"
+
+  cloud_run {
+    service = "orders-api"
+  }
+}
+
+resource "google_compute_backend_service" "orders" {
+  name                  = "orders-backend"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
+  dynamic "backend" {
+    for_each = google_compute_region_network_endpoint_group.run
+
+    content {
+      group = backend.value.id
+    }
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code># DR runbook step: promote the replica in the healthy region
+gcloud sql instances promote-replica orders-db-replica-euw1 --project acme-app-prod</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h2 id="s75">4. Security Scenarios</h2>
+  <h3 id="s10"><span class="qn">S10</span> A service account key was found in a public GitHub repo.</h3>
+  <div class="card scen"><strong>Scenario:</strong> Google emails you: a key for <code>etl-runner@acme-data.iam.gserviceaccount.com</code> was detected in a public repo.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>A leaked key gives full access as that SA until it's <strong>disabled</strong>. Attackers scan GitHub within minutes.</li>
+    <li>Keys are the root problem: use WIF, attached service accounts and impersonation instead.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li><strong>Contain:</strong> disable the key right away, then delete it.</li>
+    <li><strong>Investigate:</strong> audit logs for every call made with that key ID.</li>
+    <li><strong>Recover:</strong> move the workload to keyless auth; rotate anything the SA could read.</li>
+    <li><strong>Prevent:</strong> org policy <code>iam.disableServiceAccountKeyCreation</code>, plus secret scanning in repos.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code>SA=etl-runner@acme-data.iam.gserviceaccount.com
+KEY_ID=3f2a9c...   # from the alert
+
+gcloud iam service-accounts keys disable "$KEY_ID" --iam-account "$SA"
+
+gcloud logging read \
+  "protoPayload.authenticationInfo.serviceAccountKeyName:\"${KEY_ID}\"" \
+  --organization 123456789012 --freshness 30d \
+  --format 'table(timestamp, protoPayload.methodName, protoPayload.resourceName, protoPayload.requestMetadata.callerIp)'
+
+gcloud iam service-accounts keys delete "$KEY_ID" --iam-account "$SA" --quiet</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>resource "google_org_policy_policy" "no_sa_keys" {
+  name   = "organizations/123456789012/policies/iam.disableServiceAccountKeyCreation"
+  parent = "organizations/123456789012"
+
+  spec {
+    rules {
+      enforce = "TRUE"
+    }
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s11"><span class="qn">S11</span> The security team says a GCS bucket with customer data is public.</h3>
+  <div class="card scen"><strong>Scenario:</strong> A scanner flagged <code>allUsers</code> with <code>roles/storage.objectViewer</code> on <code>acme-customer-exports</code>.</div>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Remove the public binding now, then set public access prevention to <code>enforced</code>.</li>
+    <li>Check data access logs to see if anyone outside downloaded objects (if Data Access logs were on).</li>
+    <li>Bring the bucket under Terraform and enforce the org policy <code>storage.publicAccessPrevention</code>.</li>
+    <li>Report it to the data protection officer if customer data may have been exposed.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code>gcloud storage buckets remove-iam-policy-binding gs://acme-customer-exports \
+  --member allUsers --role roles/storage.objectViewer
+
+gcloud storage buckets update gs://acme-customer-exports --public-access-prevention</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>resource "google_org_policy_policy" "enforce_pap" {
+  name   = "organizations/123456789012/policies/storage.publicAccessPrevention"
+  parent = "organizations/123456789012"
+
+  spec {
+    rules {
+      enforce = "TRUE"
+    }
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s12"><span class="qn">S12</span> A developer asks for Owner on the prod project "to fix an urgent bug".</h3>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>Standing Owner access breaks least privilege, and one mistake could delete production.</li>
+    <li>Better: <strong>time-bound, just-in-time access</strong> with approval and audit.</li>
+  </ul>
+  <p class="lbl">What I would say and do</p>
+  <ul>
+    <li>"I'll get you exactly the access you need, for the time you need it."</li>
+    <li>Grant a narrow role (for example <code>roles/run.developer</code>) with an <strong>IAM condition</strong> that expires.</li>
+    <li>Or use Privileged Access Manager (PAM) so they request it and a lead approves.</li>
+    <li>Everything is logged; the access disappears on its own.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>resource "google_project_iam_member" "temp_run_dev" {
+  project = "acme-app-prod"
+  role    = "roles/run.developer"
+  member  = "user:dev.name@acme.com"
+
+  condition {
+    title       = "expires-incident-4821"
+    description = "Temporary access for INC-4821"
+    expression  = "request.time &lt; timestamp(\"2026-09-25T18:00:00Z\")"
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h2 id="s96">5. Multi-Cloud and AI Scenarios</h2>
+  <h3 id="s13"><span class="qn">S13</span> GCP to Azure traffic over VPN is slow and drops during peak hours.</h3>
+  <div class="card scen"><strong>Scenario:</strong> A Cloud Run app calls an Azure-hosted API over HA VPN. At peak, latency jumps and some calls time out.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>Each HA VPN tunnel carries up to roughly 3 Gbps. Traffic from one flow stays on one tunnel.</li>
+    <li>MTU mismatches cause fragmentation and drops (GCP VPN MTU is 1460; the inner payload should be smaller).</li>
+    <li>BGP may not be spreading traffic across tunnels (ECMP) if routes aren't advertised equally.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Check tunnel throughput and dropped packets in Cloud Monitoring.</li>
+    <li>Confirm both tunnels are up and BGP advertises the same routes with equal priority.</li>
+    <li>Add more tunnels, or move to <strong>Cross-Cloud Interconnect</strong> for steady high bandwidth.</li>
+    <li>Set MSS clamping / MTU correctly on the Azure side.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Bash</span><button class="copy-button" type="button">Copy</button><pre><code># Tunnel status and BGP session state
+gcloud compute vpn-tunnels list --filter="region:europe-west2" \
+  --format="table(name, status, detailedStatus)"
+
+gcloud compute routers get-status cr-azure --region europe-west2 \
+  --format="table(result.bgpPeerStatus[].name, result.bgpPeerStatus[].status, result.bgpPeerStatus[].numLearnedRoutes)"</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s14"><span class="qn">S14</span> The external AI API is rate-limiting you (HTTP 429) and users see errors.</h3>
+  <div class="card scen"><strong>Scenario:</strong> Your GCP app calls an enterprise AI model on Azure OpenAI. At busy times it returns 429 and requests fail.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>429 means you've hit the provider's tokens-per-minute or requests-per-minute quota.</li>
+    <li>Retrying immediately makes it worse — use <strong>exponential backoff with jitter</strong>, and honour <code>Retry-After</code>.</li>
+    <li>For non-urgent work, decouple with a queue so spikes are smoothed out.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Add backoff with jitter and a timeout.</li>
+    <li>Push batch jobs through <strong>Pub/Sub</strong> or <strong>Cloud Tasks</strong> with a rate limit.</li>
+    <li>Ask for more quota, or spread load across deployments in two regions.</li>
+    <li>Cache repeated prompts where it's safe to.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Python</span><button class="copy-button" type="button">Copy</button><pre><code>import random
+import time
+
+import requests
+
+
+def call_ai(url: str, headers: dict, payload: dict, max_attempts: int = 6) -&gt; dict:
+    for attempt in range(max_attempts):
+        resp = requests.post(url, headers=headers, json=payload, timeout=30)
+
+        if resp.status_code == 429 or resp.status_code &gt;= 500:
+            retry_after = resp.headers.get("Retry-After")
+            wait = float(retry_after) if retry_after else min(2**attempt, 30)
+            time.sleep(wait + random.uniform(0, 1))  # jitter avoids thundering herd
+            continue
+
+        resp.raise_for_status()
+        return resp.json()
+
+    raise RuntimeError(f"AI API still failing after {max_attempts} attempts")</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code># Smooth batch traffic: at most 5 calls/second to the AI API
+resource "google_cloud_tasks_queue" "ai_calls" {
+  name     = "ai-calls"
+  location = "europe-west2"
+
+  rate_limits {
+    max_dispatches_per_second = 5
+    max_concurrent_dispatches = 10
+  }
+
+  retry_config {
+    max_attempts  = 8
+    min_backoff   = "2s"
+    max_backoff   = "120s"
+    max_doublings = 4
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s15"><span class="qn">S15</span> An Azure Data Factory pipeline must process files that land in GCS, only once.</h3>
+  <div class="card scen"><strong>Scenario:</strong> Files arrive in GCS through the day. ADF must process each file exactly once, even if the trigger fires twice.</div>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>Event delivery (Eventarc, Pub/Sub) is <strong>at-least-once</strong>, so duplicates will happen.</li>
+    <li>Make the consumer <strong>idempotent</strong>: record each processed object (name + generation) and skip repeats.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>GCS event → Eventarc → Cloud Run function.</li>
+    <li>The function writes a marker to Firestore in a transaction; if it already exists, skip.</li>
+    <li>Only new files trigger the ADF <code>createRun</code>.</li>
+  </ul>
+  <div class="code-box"><span class="lang">Python</span><button class="copy-button" type="button">Copy</button><pre><code>import functions_framework
+from google.cloud import firestore
+
+db = firestore.Client()
+
+
+@firestore.transactional
+def claim(tx, ref) -&gt; bool:
+    if ref.get(transaction=tx).exists:
+        return False
+    tx.set(ref, {"claimed_at": firestore.SERVER_TIMESTAMP})
+    return True
+
+
+@functions_framework.cloud_event
+def on_file(event):
+    data = event.data
+    key = f"{data['bucket']}|{data['name']}|{data['generation']}".replace("/", "_")
+    ref = db.collection("processed_files").document(key)
+
+    if not claim(db.transaction(), ref):
+        print(f"Duplicate event, skipping {key}")
+        return
+
+    trigger_adf(bucket=data["bucket"], name=data["name"])  # see earlier Q&amp;A for trigger_adf</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h2 id="s119">6. Cost and Operations</h2>
+  <h3 id="s16"><span class="qn">S16</span> The GCP bill went up 40% this month. Where do you start?</h3>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>Export billing to BigQuery — it's the only way to break cost down by project, service, SKU and label.</li>
+    <li>Labels (<code>env</code>, <code>owner</code>, <code>cost-center</code>) turn "the bill" into "team X's forgotten GKE cluster".</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Query the billing export for the biggest month-on-month increases.</li>
+    <li>Check the usual suspects: idle VMs, unattached disks, oversized GKE node pools, logging ingestion, egress.</li>
+    <li>Act: rightsize, set budgets with alerts, schedule dev environments to shut down at night.</li>
+  </ul>
+  <div class="code-box"><span class="lang">BigQuery SQL</span><button class="copy-button" type="button">Copy</button><pre><code>SELECT
+  project.id AS project,
+  service.description AS service,
+  ROUND(SUM(IF(invoice.month = '202609', cost, 0)), 2) AS this_month,
+  ROUND(SUM(IF(invoice.month = '202608', cost, 0)), 2) AS last_month,
+  ROUND(SUM(IF(invoice.month = '202609', cost, 0))
+      - SUM(IF(invoice.month = '202608', cost, 0)), 2) AS increase
+FROM `acme-billing.billing_export.gcp_billing_export_v1_XXXXXX`
+WHERE invoice.month IN ('202608', '202609')
+GROUP BY project, service
+ORDER BY increase DESC
+LIMIT 15;</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>resource "google_billing_budget" "app_prod" {
+  billing_account = var.billing_account
+  display_name    = "acme-app-prod monthly"
+
+  budget_filter {
+    projects = ["projects/${var.project_number}"]
+  }
+
+  amount {
+    specified_amount {
+      currency_code = "GBP"
+      units         = "5000"
+    }
+  }
+
+  threshold_rules { threshold_percent = 0.5 }
+  threshold_rules { threshold_percent = 0.9 }
+  threshold_rules {
+    threshold_percent = 1.0
+    spend_basis       = "FORECASTED_SPEND"
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h3 id="s17"><span class="qn">S17</span> You must onboard 30 new application teams quickly and consistently.</h3>
+  <p class="lbl">Theory</p>
+  <ul>
+    <li>Manual project creation doesn't scale and drifts.</li>
+    <li>Use a <strong>project factory</strong>: one Terraform module + one YAML file per team, applied by a pipeline.</li>
+    <li>A pull request is the request form, so every project is reviewed and auditable.</li>
+  </ul>
+  <p class="lbl">What I would do</p>
+  <ul>
+    <li>Teams open a PR adding <code>teams/&lt;name&gt;.yaml</code>.</li>
+    <li>The pipeline reads all YAML files and calls the project module for each one.</li>
+    <li>Every project gets the same guardrails: labels, budgets, Shared VPC, logging, groups-based IAM.</li>
+  </ul>
+  <div class="code-box"><span class="lang">YAML</span><button class="copy-button" type="button">Copy</button><pre><code># teams/payments.yaml
+name: payments
+folder: non-prod
+owners_group: grp-payments-admins@acme.com
+cost_center: cc-2210
+apis:
+  - run.googleapis.com
+  - secretmanager.googleapis.com
+budget_gbp: 1500</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <div class="code-box"><span class="lang">Terraform</span><button class="copy-button" type="button">Copy</button><pre><code>locals {
+  teams = {
+    for f in fileset("${path.module}/teams", "*.yaml") :
+    trimsuffix(f, ".yaml") =&gt; yamldecode(file("${path.module}/teams/${f}"))
+  }
+}
+
+module "project" {
+  source   = "git::https://dev.azure.com/acme/platform/_git/tf-modules//project?ref=v3.1.0"
+  for_each = local.teams
+
+  name            = each.value.name
+  folder_id       = var.folders[each.value.folder]
+  billing_account = var.billing_account
+  apis            = each.value.apis
+  owners_group    = each.value.owners_group
+  budget_amount   = each.value.budget_gbp
+
+  labels = {
+    team        = each.key
+    cost-center = each.value.cost_center
+  }
+}</code></pre><span class="copy-status" aria-live="polite"></span></div>
+  <h2 id="s134">7. Behavioural Scenarios</h2>
+  <h3 id="s18"><span class="qn">S18</span> Your change caused a production outage. How do you handle it?</h3>
+  <ul>
+    <li><strong>Own it early.</strong> Tell the incident channel what you changed and when.</li>
+    <li><strong>Restore service first</strong> (rollback), and investigate after.</li>
+    <li><strong>Blameless post-mortem:</strong> timeline, root cause, what went well, what didn't.</li>
+    <li><strong>Concrete actions</strong> with owners: for example, add a canary step or a plan-deletion check.</li>
+    <li>Share the learning with other teams so it doesn't happen elsewhere.</li>
+  </ul>
+  <h3 id="s19"><span class="qn">S19</span> The app team wants to skip the pipeline and deploy from their laptops "because it's faster".</h3>
+  <ul>
+    <li>Listen first: find out <strong>what</strong> is slow — reviews, test time, approvals?</li>
+    <li>Explain the risk in their terms: no audit trail, no rollback, and "it worked on my machine" drift.</li>
+    <li>Fix the real problem: faster pipelines (caching, parallel jobs), auto-approval for dev, self-service templates.</li>
+    <li>Keep the guardrail: only the pipeline SA can deploy to prod (IAM + org policy).</li>
+    <li>Measure it: show deploy lead time before and after.</li>
+  </ul>
+  <div class="card warn">
+  <strong>Final tips for scenario rounds</strong>
+  <ul>
+
+  </ul>
+  </div>
+  <ul>
+    <li>Always say <strong>mitigate first, root-cause second</strong>.</li>
+    <li>Quantify: "rollback in 30 seconds", "RPO under 5 minutes", "cut plan time from 25 to 4 minutes".</li>
+    <li>Name the <strong>prevention</strong> step — interviewers look for engineers who stop repeat incidents.</li>
+    <li>Mention trade-offs (cost vs resilience, speed vs control) before you pick an option.</li>
+  </ul>
+
+  <footer>Terraform · Azure DevOps · Google Cloud · AWS · Azure. Code uses example names — replace project, region and account IDs with your own.</footer>
+</main>
+<script>
+  document.querySelectorAll('.copy-button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var box = btn.closest('.code-box');
+      var text = box.querySelector('code').innerText;
+      var status = box.querySelector('.copy-status');
+      function done(msg) { status.textContent = msg; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; status.textContent = ''; }, 1800); }
+      function fallback() {
+        var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); done('Copied to clipboard.'); } catch (e) { status.textContent = 'Press Ctrl/Cmd+C to copy.'; }
+        ta.remove();
+      }
+      if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { done('Copied to clipboard.'); }, fallback); } else { fallback(); }
+    });
+  });
+</script>
+</body>
+</html>

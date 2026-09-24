@@ -25,7 +25,8 @@
     .warn { background:var(--yellow); border-left:4px solid #c28a16; }
     .toc ul { columns:2; column-gap:28px; margin:8px 0 0; }
     .toc li { break-inside:avoid; }
-    code { background:#edf0f3; border-radius:4px; padding:2px 5px; font-size:.92em; }
+    code { background:#edf0f3; border-radius:4px; padding:2px 5px; font-size:.92em; overflow-wrap:anywhere; }
+    pre code { overflow-wrap:normal; }
     .code-box { position:relative; margin:14px 0; }
     .code-box .lang { position:absolute; top:12px; right:88px; color:#9aa6b4; font:700 11px/1 ui-monospace,Menlo,monospace; letter-spacing:.08em; text-transform:uppercase; }
     pre { background:#20252b; color:#ffffff; padding:18px 92px 18px 16px; border-radius:7px; overflow:auto; margin:0; font:14px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; tab-size:2; }
