@@ -1,3 +1,5 @@
+qlpOLtEdI6xuJ1.f.;*vn7ws!%?dwGuf
+
 # Google Cloud DevOps Engineer — Interview Q&A
 
 Bullet-style answers with copy-ready code for the Custom Application Architect / Google Cloud Engineer (CL9) role.
