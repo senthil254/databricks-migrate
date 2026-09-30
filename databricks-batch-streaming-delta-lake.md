@@ -1,0 +1,41 @@
+# Databricks Batch and Streaming with Delta Lake
+
+Today we’ll demonstrate how Databricks supports both batch and streaming workloads using Delta Lake.
+
+We’ll start by creating a Unity Catalog catalog, schema, and Volume. The catalog and schema organise our data. The Volume gives us a governed location for Delta files. A Spark DataFrame is written to a registered Delta table using `saveAsTable`.
+
+Next, we create a small batch of event data in Python. These are just a few sample events, such as clicks, views, and purchases.
+
+We turn those rows into a Spark DataFrame. At this point, the data is only in memory. It has not been saved yet.
+
+Next, we write the data to a Delta table called `events`. We use append mode. Append simply means, “add these rows to the table.” Because the table is empty, the first batch becomes the first ten rows.
+
+Now we create a second batch of events. This time, we use overwrite mode. This replaces the current table contents. Delta performs the overwrite as an atomic transaction, so readers see either the old complete table or the new complete table.
+
+Now we check the history with `DESCRIBE HISTORY`. This shows the table versions, operations, timestamps, users, and write metrics.
+
+This tells us that the table has more than one version. We can see what operation happened, when it happened, who performed it, and how many rows were written.
+
+This is where Delta becomes very useful. Even though the first batch is no longer the current data, we can still query it with `VERSION AS OF`.
+
+So, if someone asks, “What did this table look like before the overwrite?” we can answer that question directly from Delta.
+
+We can read the Delta data in some ways: by name and by path. We can read the table by name using `spark.table`. This is usually the best choice for a table managed through Unity Catalog.
+
+The notebook compares catalog-based and path-based reads. `spark.table` resolves a registered table through Unity Catalog. `spark.read.format("delta").load(path)` reads Delta data from a governed Volume or external location.
+
+Now we move to streaming.
+
+Instead of creating one fixed batch, we can create a stream that continuously produces new events. We write those events into a Delta table using `writeStream`.
+
+The checkpoint location is very important. It is like the stream’s memory. It records which data has already been processed. If the stream stops and starts again, the checkpoint helps it continue from the correct place.
+
+The checkpoint is required for fault tolerance and restart behaviour. Each streaming query must use its own checkpoint location.
+
+While the stream is running, we read the same Delta table with a normal batch query. After waiting for new records, the batch count increases. This shows that the same Delta table can serve both a streaming writer and a batch reader.
+
+The batch reader does not need a separate copy of the data. It simply reads the latest committed version of the Delta table.
+
+So, the simple message is this: batch and streaming can work together on the same Delta table, with reliable writes, checkpoints, and consistent reads.
+
+That is the power of the lakehouse approach: simple batch processing, continuous ingestion, reliable history, and one shared source of truth.
