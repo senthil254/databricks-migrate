@@ -1,0 +1,907 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Redshift Sample DDL</title>
+<style>
+:root{--bg:#f4f6f7;--pn:#fff;--ink:#16202a;--dim:#5b6b78;--ln:#dce3e8;--ac:#c2410c;--acs:#fdeee5;
+--code:#0f1720;--cink:#d6e1ea;--t:#2563a8;--f:#7c3aed;--p:#b45309;--v:#0f766e;
+--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0c1117;--pn:#141b23;--ink:#e3eaf0;--dim:#8d9caa;--ln:#25303b;--ac:#f08a4b;--acs:#3a2216;--code:#070b10;--t:#6aa8ec;--f:#b48cf5;--p:#e0a050;--v:#4cc2b4}}
+:root[data-theme=dark]{--bg:#0c1117;--pn:#141b23;--ink:#e3eaf0;--dim:#8d9caa;--ln:#25303b;--ac:#f08a4b;--acs:#3a2216;--code:#070b10;--t:#6aa8ec;--f:#b48cf5;--p:#e0a050;--v:#4cc2b4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.6 var(--sans)}
+.top{position:sticky;top:0;z-index:10;background:var(--pn);border-bottom:1px solid var(--ln);display:flex;gap:12px;align-items:center;padding:12px 20px;flex-wrap:wrap}
+.top h1{font-size:16px;margin:0 auto 0 0;letter-spacing:-.01em}.top h1 span{color:var(--ac)}
+input[type=search]{font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--ln);border-radius:8px;padding:6px 10px;min-width:200px}
+button{font:inherit;cursor:pointer}
+.chip{background:var(--bg);color:var(--dim);border:1px solid var(--ln);border-radius:20px;padding:4px 11px;font-size:12.5px}
+.chip[aria-pressed=true]{background:var(--ac);border-color:var(--ac);color:#fff}.chip b{font-weight:600;margin-left:3px}
+.cp{background:transparent;color:var(--dim);border:1px solid var(--ln);border-radius:6px;padding:3px 10px;font-size:12px;margin-left:auto;white-space:nowrap}
+.cp:hover{border-color:var(--ac);color:var(--ac)}.cp.ok{background:#1e7a45;border-color:#1e7a45;color:#fff}
+.cp.big{padding:6px 14px;font-size:13px}.cp.all{background:var(--ac);border-color:var(--ac);color:#fff;margin:0}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.lay{display:grid;grid-template-columns:240px 1fr;max-width:1240px;margin:0 auto}
+nav{position:sticky;top:58px;align-self:start;max-height:calc(100vh - 58px);overflow:auto;padding:18px 12px 40px 20px;font-size:13px}
+.ng{margin-bottom:14px}.ns{display:block;font-family:var(--mono);font-weight:600;color:var(--ink);text-decoration:none;margin-bottom:3px}
+.no{display:flex;align-items:center;gap:7px;color:var(--dim);text-decoration:none;padding:1px 0 1px 4px;font-family:var(--mono);font-size:12.5px}
+.no:hover{color:var(--ac)}.no.hid{display:none}
+.k{width:8px;height:8px;border-radius:2px;flex:none;display:inline-block}.k.t{background:var(--t)}.k.f{background:var(--f);border-radius:50%}.k.p{background:var(--p);transform:rotate(45deg)}.k.v{background:var(--v)}
+main{padding:20px 20px 80px;min-width:0}
+.intro{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:18px 20px;margin-bottom:22px}
+.intro p{margin:4px 0;max-width:70ch;color:var(--dim)}.intro strong{color:var(--ink)}
+.tbl{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:10px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--ln);vertical-align:top}th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)}
+code{font-family:var(--mono);font-size:.92em;overflow-wrap:anywhere}
+.schema{margin-bottom:36px}.sh{display:flex;gap:16px;align-items:flex-start;padding:10px 0 12px;border-bottom:2px solid var(--ac);margin-bottom:12px}
+.sh h2{font-family:var(--mono);font-size:20px;margin:0}.sh p{margin:2px 0;color:var(--dim)}.cnt{font-size:12.5px}
+.obj{background:var(--pn);border:1px solid var(--ln);border-radius:10px;margin:10px 0;overflow:hidden}.obj.hid{display:none}
+.oh{display:flex;align-items:center;gap:9px;padding:9px 12px;flex-wrap:wrap}
+.kd{font-size:10.5px;letter-spacing:.08em;color:var(--dim);font-weight:600}.nm{font-family:var(--mono);font-weight:600;font-size:13.5px;overflow-wrap:anywhere}
+.meta{font-size:12px;color:var(--dim)}.fts{display:flex;gap:5px;flex-wrap:wrap}
+.ft{font-size:11px;font-family:var(--mono);background:var(--acs);color:var(--ac);border-radius:4px;padding:1px 6px}
+pre{margin:0;background:var(--code);color:var(--cink);padding:13px 15px;overflow-x:auto;font:12.8px/1.6 var(--mono)}
+.empty{display:none;color:var(--dim);padding:30px;text-align:center}
+@media(max-width:820px){.lay{grid-template-columns:1fr}nav{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+</style></head><body>
+<div class="top"><h1>Redshift Sample DDL <span>/</span> migration test</h1>
+<input type="search" id="q" placeholder="Filter objects…" aria-label="Filter objects"><button class="chip" data-f="TABLE" aria-pressed="false">Tables <b>14</b></button><button class="chip" data-f="FUNCTION" aria-pressed="false">Functions <b>5</b></button><button class="chip" data-f="PROCEDURE" aria-pressed="false">Procedures <b>1</b></button>
+<button class="cp all" id="all" data-copy="-- ===== demo_fast_test =====
+CREATE SCHEMA IF NOT EXISTS demo_fast_test;
+
+CREATE TABLE demo_fast_test.customers (
+    id integer NOT NULL ENCODE az64,
+    name character varying(50) ENCODE lzo COLLATE case_sensitive,
+    signup_year integer ENCODE az64
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_fast_test.orders (
+    id integer NOT NULL ENCODE az64,
+    customer_id integer ENCODE az64,
+    amount integer ENCODE az64
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_fast_test.payments (
+    payment_id integer NOT NULL ENCODE az64,
+    order_id integer NOT NULL ENCODE az64,
+    amount numeric(10,2) NOT NULL ENCODE az64,
+    paid_on date NOT NULL ENCODE az64,
+    payment_method character varying(20) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_fast_test.products (
+    product_id integer NOT NULL ENCODE az64,
+    sku character varying(20) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    product_name character varying(60) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    unit_price numeric(10,2) NOT NULL ENCODE az64,
+    in_stock boolean NOT NULL ENCODE raw
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_fast_test.regions (
+    region_id integer NOT NULL ENCODE az64,
+    region_name character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    country character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_customer_tenure(signup_year integer)
+RETURNS integer
+STABLE
+AS $$ SELECT CAST(DATE_PART(year, CURRENT_DATE) - $1 AS INTEGER) $$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_discounted_total(amount double precision, pct double precision)
+RETURNS double precision
+STABLE
+AS $$ SELECT $1 * (1 - $2 / 100.0) $$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_is_active(signup_year integer)
+RETURNS boolean
+STABLE
+AS $$ SELECT $1 &gt;= 2022 $$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_revenue_score(amount double precision)
+RETURNS integer
+STABLE
+AS $$ SELECT CASE WHEN $1 &lt; 1000 THEN 1 WHEN $1 &lt; 100000 THEN 2 ELSE 3 END $$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_tenure_years(signup_year integer)
+RETURNS integer
+STABLE
+AS $$ SELECT 2026 - $1 $$
+LANGUAGE sql;
+
+CREATE OR REPLACE PROCEDURE demo_fast_test.sp_top_customers(min_spend double precision)
+ LANGUAGE plpgsql
+AS $$
+BEGIN
+    DROP TABLE IF EXISTS demo_fast_test.top_customers;
+    CREATE TABLE demo_fast_test.top_customers AS
+    SELECT c.id            AS customer_id,
+           c.name          AS customer_name,
+           c.signup_year   AS signup_year,
+           COUNT(o.id)     AS order_count,
+           SUM(o.amount)   AS total_spend
+    FROM demo_fast_test.customers c
+    JOIN demo_fast_test.orders o ON o.customer_id = c.id
+    GROUP BY c.id, c.name, c.signup_year
+    HAVING SUM(o.amount) &gt;= min_spend;
+END;
+$$;
+
+-- ===== demo_schema_test =====
+CREATE SCHEMA IF NOT EXISTS demo_schema_test;
+
+CREATE TABLE demo_schema_test.departments (
+    department_id integer NOT NULL ENCODE az64,
+    department_name character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    location character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_schema_test.employees (
+    employee_id integer NOT NULL ENCODE az64,
+    full_name character varying(60) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    department_id integer NOT NULL ENCODE az64,
+    hired_on date NOT NULL ENCODE az64,
+    salary numeric(10,2) NOT NULL ENCODE az64
+)
+DISTSTYLE AUTO;
+
+-- ===== public =====
+CREATE SCHEMA IF NOT EXISTS public;
+
+CREATE TABLE public.category (
+    catid smallint NOT NULL ENCODE raw distkey,
+    catgroup character varying(10) ENCODE lzo COLLATE case_sensitive,
+    catname character varying(10) ENCODE lzo COLLATE case_sensitive,
+    catdesc character varying(50) ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE KEY
+SORTKEY ( catid );
+
+CREATE TABLE public.date (
+    dateid smallint NOT NULL ENCODE raw distkey,
+    caldate date NOT NULL ENCODE az64,
+    day character(3) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    week smallint NOT NULL ENCODE az64,
+    month character(5) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    qtr character(5) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    year smallint NOT NULL ENCODE az64,
+    holiday boolean DEFAULT false ENCODE raw
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );
+
+CREATE TABLE public.event (
+    eventid integer NOT NULL ENCODE az64 distkey,
+    venueid smallint NOT NULL ENCODE az64,
+    catid smallint NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    eventname character varying(200) ENCODE lzo COLLATE case_sensitive,
+    starttime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );
+
+CREATE TABLE public.listing (
+    listid integer NOT NULL ENCODE az64 distkey,
+    sellerid integer NOT NULL ENCODE az64,
+    eventid integer NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    numtickets smallint NOT NULL ENCODE az64,
+    priceperticket numeric(8,2) ENCODE az64,
+    totalprice numeric(8,2) ENCODE az64,
+    listtime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );
+
+CREATE TABLE public.sales (
+    salesid integer NOT NULL ENCODE az64,
+    listid integer NOT NULL ENCODE az64 distkey,
+    sellerid integer NOT NULL ENCODE az64,
+    buyerid integer NOT NULL ENCODE az64,
+    eventid integer NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    qtysold smallint NOT NULL ENCODE az64,
+    pricepaid numeric(8,2) ENCODE az64,
+    commission numeric(8,2) ENCODE az64,
+    saletime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );
+
+CREATE TABLE public.users (
+    userid integer NOT NULL ENCODE raw distkey,
+    username character(8) ENCODE lzo COLLATE case_sensitive,
+    firstname character varying(30) ENCODE lzo COLLATE case_sensitive,
+    lastname character varying(30) ENCODE lzo COLLATE case_sensitive,
+    city character varying(30) ENCODE lzo COLLATE case_sensitive,
+    state character(2) ENCODE lzo COLLATE case_sensitive,
+    email character varying(100) ENCODE lzo COLLATE case_sensitive,
+    phone character(14) ENCODE lzo COLLATE case_sensitive,
+    likesports boolean ENCODE raw,
+    liketheatre boolean ENCODE raw,
+    likeconcerts boolean ENCODE raw,
+    likejazz boolean ENCODE raw,
+    likeclassical boolean ENCODE raw,
+    likeopera boolean ENCODE raw,
+    likerock boolean ENCODE raw,
+    likevegas boolean ENCODE raw,
+    likebroadway boolean ENCODE raw,
+    likemusicals boolean ENCODE raw
+)
+DISTSTYLE KEY
+SORTKEY ( userid );
+
+CREATE TABLE public.venue (
+    venueid smallint NOT NULL ENCODE raw distkey,
+    venuename character varying(100) ENCODE lzo COLLATE case_sensitive,
+    venuecity character varying(30) ENCODE lzo COLLATE case_sensitive,
+    venuestate character(2) ENCODE lzo COLLATE case_sensitive,
+    venueseats integer ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( venueid );">Copy all 20</button>
+<button class="cp" id="th">Theme</button></div>
+<div class="lay"><nav aria-label="Objects"><div class="ng"><a class="ns" href="#s-demo_fast_test">demo_fast_test</a><a class="no" href="#o-demo_fast_test.customers" data-k="TABLE"><i class="k t"></i>customers</a><a class="no" href="#o-demo_fast_test.orders" data-k="TABLE"><i class="k t"></i>orders</a><a class="no" href="#o-demo_fast_test.payments" data-k="TABLE"><i class="k t"></i>payments</a><a class="no" href="#o-demo_fast_test.products" data-k="TABLE"><i class="k t"></i>products</a><a class="no" href="#o-demo_fast_test.regions" data-k="TABLE"><i class="k t"></i>regions</a><a class="no" href="#o-demo_fast_test.f_customer_tenure" data-k="FUNCTION"><i class="k f"></i>f_customer_tenure</a><a class="no" href="#o-demo_fast_test.f_discounted_total" data-k="FUNCTION"><i class="k f"></i>f_discounted_total</a><a class="no" href="#o-demo_fast_test.f_is_active" data-k="FUNCTION"><i class="k f"></i>f_is_active</a><a class="no" href="#o-demo_fast_test.f_revenue_score" data-k="FUNCTION"><i class="k f"></i>f_revenue_score</a><a class="no" href="#o-demo_fast_test.f_tenure_years" data-k="FUNCTION"><i class="k f"></i>f_tenure_years</a><a class="no" href="#o-demo_fast_test.sp_top_customers" data-k="PROCEDURE"><i class="k p"></i>sp_top_customers</a></div><div class="ng"><a class="ns" href="#s-demo_schema_test">demo_schema_test</a><a class="no" href="#o-demo_schema_test.departments" data-k="TABLE"><i class="k t"></i>departments</a><a class="no" href="#o-demo_schema_test.employees" data-k="TABLE"><i class="k t"></i>employees</a></div><div class="ng"><a class="ns" href="#s-public">public</a><a class="no" href="#o-public.category" data-k="TABLE"><i class="k t"></i>category</a><a class="no" href="#o-public.date" data-k="TABLE"><i class="k t"></i>date</a><a class="no" href="#o-public.event" data-k="TABLE"><i class="k t"></i>event</a><a class="no" href="#o-public.listing" data-k="TABLE"><i class="k t"></i>listing</a><a class="no" href="#o-public.sales" data-k="TABLE"><i class="k t"></i>sales</a><a class="no" href="#o-public.users" data-k="TABLE"><i class="k t"></i>users</a><a class="no" href="#o-public.venue" data-k="TABLE"><i class="k t"></i>venue</a></div></nav><main>
+<div class="intro"><p><strong>DDL only — no data.</strong> Extracted live from the Redshift cluster on
+<code>2026-10-12T17:26:51+00:00</code>: 20 objects across 3 schemas.</p>
+<p>Orange tags mark <strong>Redshift-only constructs</strong> — what the migration has to translate or drop.</p>
+<div class="tbl"><table><tr><th>Construct</th><th>Where</th><th>Databricks</th></tr>
+<tr><td><code>ENCODE</code></td><td>every column</td><td>dropped — Delta compresses itself</td></tr>
+<tr><td><code>DISTKEY</code> / <code>DISTSTYLE</code></td><td>TICKIT tables</td><td>dropped — no distribution model</td></tr>
+<tr><td><code>SORTKEY</code></td><td>TICKIT tables</td><td><code>CLUSTER BY</code>, or dropped</td></tr>
+<tr><td>SQL UDF, <code>$$</code> body + volatility</td><td>5 demo functions</td><td><code>CREATE FUNCTION … RETURN</code></td></tr>
+<tr><td>PL/pgSQL procedure</td><td><code>sp_top_customers</code></td><td>rewrite — SQL scripting or notebook</td></tr>
+</table></div>
+<p>Excluded on purpose: <code>pg_auto_copy.copy_job_detail</code> — a system view, not sample data.</p></div>
+<section class="schema" id="s-demo_fast_test">
+  <header class="sh"><div><h2>demo_fast_test</h2><p>Lakebridge demo — tables, 5 UDFs and a stored procedure</p>
+  <p class="cnt">5 tables · 5 functions · 1 procedures</p></div>
+  <button class="cp big" data-copy="CREATE SCHEMA IF NOT EXISTS demo_fast_test;
+
+CREATE TABLE demo_fast_test.customers (
+    id integer NOT NULL ENCODE az64,
+    name character varying(50) ENCODE lzo COLLATE case_sensitive,
+    signup_year integer ENCODE az64
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_fast_test.orders (
+    id integer NOT NULL ENCODE az64,
+    customer_id integer ENCODE az64,
+    amount integer ENCODE az64
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_fast_test.payments (
+    payment_id integer NOT NULL ENCODE az64,
+    order_id integer NOT NULL ENCODE az64,
+    amount numeric(10,2) NOT NULL ENCODE az64,
+    paid_on date NOT NULL ENCODE az64,
+    payment_method character varying(20) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_fast_test.products (
+    product_id integer NOT NULL ENCODE az64,
+    sku character varying(20) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    product_name character varying(60) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    unit_price numeric(10,2) NOT NULL ENCODE az64,
+    in_stock boolean NOT NULL ENCODE raw
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_fast_test.regions (
+    region_id integer NOT NULL ENCODE az64,
+    region_name character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    country character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_customer_tenure(signup_year integer)
+RETURNS integer
+STABLE
+AS $$ SELECT CAST(DATE_PART(year, CURRENT_DATE) - $1 AS INTEGER) $$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_discounted_total(amount double precision, pct double precision)
+RETURNS double precision
+STABLE
+AS $$ SELECT $1 * (1 - $2 / 100.0) $$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_is_active(signup_year integer)
+RETURNS boolean
+STABLE
+AS $$ SELECT $1 &gt;= 2022 $$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_revenue_score(amount double precision)
+RETURNS integer
+STABLE
+AS $$ SELECT CASE WHEN $1 &lt; 1000 THEN 1 WHEN $1 &lt; 100000 THEN 2 ELSE 3 END $$
+LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION demo_fast_test.f_tenure_years(signup_year integer)
+RETURNS integer
+STABLE
+AS $$ SELECT 2026 - $1 $$
+LANGUAGE sql;
+
+CREATE OR REPLACE PROCEDURE demo_fast_test.sp_top_customers(min_spend double precision)
+ LANGUAGE plpgsql
+AS $$
+BEGIN
+    DROP TABLE IF EXISTS demo_fast_test.top_customers;
+    CREATE TABLE demo_fast_test.top_customers AS
+    SELECT c.id            AS customer_id,
+           c.name          AS customer_name,
+           c.signup_year   AS signup_year,
+           COUNT(o.id)     AS order_count,
+           SUM(o.amount)   AS total_spend
+    FROM demo_fast_test.customers c
+    JOIN demo_fast_test.orders o ON o.customer_id = c.id
+    GROUP BY c.id, c.name, c.signup_year
+    HAVING SUM(o.amount) &gt;= min_spend;
+END;
+$$;">Copy schema</button></header>
+  <div class="obj"><div class="oh"><span class="nm">CREATE SCHEMA IF NOT EXISTS demo_fast_test;</span>
+  <button class="cp" data-copy="CREATE SCHEMA IF NOT EXISTS demo_fast_test;">Copy</button></div></div>  <article class="obj" id="o-demo_fast_test.customers" data-k="TABLE" data-s="demo_fast_test.customers">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">demo_fast_test.customers</span><span class="meta">3 cols</span><span class="fts"><span class="ft">ENCODE</span></span>
+      <button class="cp" data-copy="CREATE TABLE demo_fast_test.customers (
+    id integer NOT NULL ENCODE az64,
+    name character varying(50) ENCODE lzo COLLATE case_sensitive,
+    signup_year integer ENCODE az64
+)
+DISTSTYLE AUTO;">Copy</button></div>
+    <pre><code>CREATE TABLE demo_fast_test.customers (
+    id integer NOT NULL ENCODE az64,
+    name character varying(50) ENCODE lzo COLLATE case_sensitive,
+    signup_year integer ENCODE az64
+)
+DISTSTYLE AUTO;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.orders" data-k="TABLE" data-s="demo_fast_test.orders">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">demo_fast_test.orders</span><span class="meta">3 cols</span><span class="fts"><span class="ft">ENCODE</span></span>
+      <button class="cp" data-copy="CREATE TABLE demo_fast_test.orders (
+    id integer NOT NULL ENCODE az64,
+    customer_id integer ENCODE az64,
+    amount integer ENCODE az64
+)
+DISTSTYLE AUTO;">Copy</button></div>
+    <pre><code>CREATE TABLE demo_fast_test.orders (
+    id integer NOT NULL ENCODE az64,
+    customer_id integer ENCODE az64,
+    amount integer ENCODE az64
+)
+DISTSTYLE AUTO;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.payments" data-k="TABLE" data-s="demo_fast_test.payments">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">demo_fast_test.payments</span><span class="meta">5 cols</span><span class="fts"><span class="ft">ENCODE</span></span>
+      <button class="cp" data-copy="CREATE TABLE demo_fast_test.payments (
+    payment_id integer NOT NULL ENCODE az64,
+    order_id integer NOT NULL ENCODE az64,
+    amount numeric(10,2) NOT NULL ENCODE az64,
+    paid_on date NOT NULL ENCODE az64,
+    payment_method character varying(20) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;">Copy</button></div>
+    <pre><code>CREATE TABLE demo_fast_test.payments (
+    payment_id integer NOT NULL ENCODE az64,
+    order_id integer NOT NULL ENCODE az64,
+    amount numeric(10,2) NOT NULL ENCODE az64,
+    paid_on date NOT NULL ENCODE az64,
+    payment_method character varying(20) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.products" data-k="TABLE" data-s="demo_fast_test.products">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">demo_fast_test.products</span><span class="meta">5 cols</span><span class="fts"><span class="ft">ENCODE</span></span>
+      <button class="cp" data-copy="CREATE TABLE demo_fast_test.products (
+    product_id integer NOT NULL ENCODE az64,
+    sku character varying(20) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    product_name character varying(60) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    unit_price numeric(10,2) NOT NULL ENCODE az64,
+    in_stock boolean NOT NULL ENCODE raw
+)
+DISTSTYLE AUTO;">Copy</button></div>
+    <pre><code>CREATE TABLE demo_fast_test.products (
+    product_id integer NOT NULL ENCODE az64,
+    sku character varying(20) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    product_name character varying(60) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    unit_price numeric(10,2) NOT NULL ENCODE az64,
+    in_stock boolean NOT NULL ENCODE raw
+)
+DISTSTYLE AUTO;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.regions" data-k="TABLE" data-s="demo_fast_test.regions">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">demo_fast_test.regions</span><span class="meta">3 cols</span><span class="fts"><span class="ft">ENCODE</span></span>
+      <button class="cp" data-copy="CREATE TABLE demo_fast_test.regions (
+    region_id integer NOT NULL ENCODE az64,
+    region_name character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    country character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;">Copy</button></div>
+    <pre><code>CREATE TABLE demo_fast_test.regions (
+    region_id integer NOT NULL ENCODE az64,
+    region_name character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    country character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.f_customer_tenure" data-k="FUNCTION" data-s="demo_fast_test.f_customer_tenure">
+    <div class="oh"><i class="k f"></i><span class="kd">FUNCTION</span>
+      <span class="nm">demo_fast_test.f_customer_tenure</span><span class="fts"><span class="ft">SQL UDF</span><span class="ft">$$ body</span></span>
+      <button class="cp" data-copy="CREATE OR REPLACE FUNCTION demo_fast_test.f_customer_tenure(signup_year integer)
+RETURNS integer
+STABLE
+AS $$ SELECT CAST(DATE_PART(year, CURRENT_DATE) - $1 AS INTEGER) $$
+LANGUAGE sql;">Copy</button></div>
+    <pre><code>CREATE OR REPLACE FUNCTION demo_fast_test.f_customer_tenure(signup_year integer)
+RETURNS integer
+STABLE
+AS $$ SELECT CAST(DATE_PART(year, CURRENT_DATE) - $1 AS INTEGER) $$
+LANGUAGE sql;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.f_discounted_total" data-k="FUNCTION" data-s="demo_fast_test.f_discounted_total">
+    <div class="oh"><i class="k f"></i><span class="kd">FUNCTION</span>
+      <span class="nm">demo_fast_test.f_discounted_total</span><span class="fts"><span class="ft">SQL UDF</span><span class="ft">$$ body</span></span>
+      <button class="cp" data-copy="CREATE OR REPLACE FUNCTION demo_fast_test.f_discounted_total(amount double precision, pct double precision)
+RETURNS double precision
+STABLE
+AS $$ SELECT $1 * (1 - $2 / 100.0) $$
+LANGUAGE sql;">Copy</button></div>
+    <pre><code>CREATE OR REPLACE FUNCTION demo_fast_test.f_discounted_total(amount double precision, pct double precision)
+RETURNS double precision
+STABLE
+AS $$ SELECT $1 * (1 - $2 / 100.0) $$
+LANGUAGE sql;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.f_is_active" data-k="FUNCTION" data-s="demo_fast_test.f_is_active">
+    <div class="oh"><i class="k f"></i><span class="kd">FUNCTION</span>
+      <span class="nm">demo_fast_test.f_is_active</span><span class="fts"><span class="ft">SQL UDF</span><span class="ft">$$ body</span></span>
+      <button class="cp" data-copy="CREATE OR REPLACE FUNCTION demo_fast_test.f_is_active(signup_year integer)
+RETURNS boolean
+STABLE
+AS $$ SELECT $1 &gt;= 2022 $$
+LANGUAGE sql;">Copy</button></div>
+    <pre><code>CREATE OR REPLACE FUNCTION demo_fast_test.f_is_active(signup_year integer)
+RETURNS boolean
+STABLE
+AS $$ SELECT $1 &gt;= 2022 $$
+LANGUAGE sql;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.f_revenue_score" data-k="FUNCTION" data-s="demo_fast_test.f_revenue_score">
+    <div class="oh"><i class="k f"></i><span class="kd">FUNCTION</span>
+      <span class="nm">demo_fast_test.f_revenue_score</span><span class="fts"><span class="ft">SQL UDF</span><span class="ft">$$ body</span></span>
+      <button class="cp" data-copy="CREATE OR REPLACE FUNCTION demo_fast_test.f_revenue_score(amount double precision)
+RETURNS integer
+STABLE
+AS $$ SELECT CASE WHEN $1 &lt; 1000 THEN 1 WHEN $1 &lt; 100000 THEN 2 ELSE 3 END $$
+LANGUAGE sql;">Copy</button></div>
+    <pre><code>CREATE OR REPLACE FUNCTION demo_fast_test.f_revenue_score(amount double precision)
+RETURNS integer
+STABLE
+AS $$ SELECT CASE WHEN $1 &lt; 1000 THEN 1 WHEN $1 &lt; 100000 THEN 2 ELSE 3 END $$
+LANGUAGE sql;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.f_tenure_years" data-k="FUNCTION" data-s="demo_fast_test.f_tenure_years">
+    <div class="oh"><i class="k f"></i><span class="kd">FUNCTION</span>
+      <span class="nm">demo_fast_test.f_tenure_years</span><span class="fts"><span class="ft">SQL UDF</span><span class="ft">$$ body</span></span>
+      <button class="cp" data-copy="CREATE OR REPLACE FUNCTION demo_fast_test.f_tenure_years(signup_year integer)
+RETURNS integer
+STABLE
+AS $$ SELECT 2026 - $1 $$
+LANGUAGE sql;">Copy</button></div>
+    <pre><code>CREATE OR REPLACE FUNCTION demo_fast_test.f_tenure_years(signup_year integer)
+RETURNS integer
+STABLE
+AS $$ SELECT 2026 - $1 $$
+LANGUAGE sql;</code></pre>
+  </article>  <article class="obj" id="o-demo_fast_test.sp_top_customers" data-k="PROCEDURE" data-s="demo_fast_test.sp_top_customers">
+    <div class="oh"><i class="k p"></i><span class="kd">PROCEDURE</span>
+      <span class="nm">demo_fast_test.sp_top_customers</span><span class="fts"><span class="ft">PL/pgSQL</span><span class="ft">$$ body</span></span>
+      <button class="cp" data-copy="CREATE OR REPLACE PROCEDURE demo_fast_test.sp_top_customers(min_spend double precision)
+ LANGUAGE plpgsql
+AS $$
+BEGIN
+    DROP TABLE IF EXISTS demo_fast_test.top_customers;
+    CREATE TABLE demo_fast_test.top_customers AS
+    SELECT c.id            AS customer_id,
+           c.name          AS customer_name,
+           c.signup_year   AS signup_year,
+           COUNT(o.id)     AS order_count,
+           SUM(o.amount)   AS total_spend
+    FROM demo_fast_test.customers c
+    JOIN demo_fast_test.orders o ON o.customer_id = c.id
+    GROUP BY c.id, c.name, c.signup_year
+    HAVING SUM(o.amount) &gt;= min_spend;
+END;
+$$;">Copy</button></div>
+    <pre><code>CREATE OR REPLACE PROCEDURE demo_fast_test.sp_top_customers(min_spend double precision)
+ LANGUAGE plpgsql
+AS $$
+BEGIN
+    DROP TABLE IF EXISTS demo_fast_test.top_customers;
+    CREATE TABLE demo_fast_test.top_customers AS
+    SELECT c.id            AS customer_id,
+           c.name          AS customer_name,
+           c.signup_year   AS signup_year,
+           COUNT(o.id)     AS order_count,
+           SUM(o.amount)   AS total_spend
+    FROM demo_fast_test.customers c
+    JOIN demo_fast_test.orders o ON o.customer_id = c.id
+    GROUP BY c.id, c.name, c.signup_year
+    HAVING SUM(o.amount) &gt;= min_spend;
+END;
+$$;</code></pre>
+  </article></section><section class="schema" id="s-demo_schema_test">
+  <header class="sh"><div><h2>demo_schema_test</h2><p>Lakebridge demo — whole-schema batch test</p>
+  <p class="cnt">2 tables · 0 functions · 0 procedures</p></div>
+  <button class="cp big" data-copy="CREATE SCHEMA IF NOT EXISTS demo_schema_test;
+
+CREATE TABLE demo_schema_test.departments (
+    department_id integer NOT NULL ENCODE az64,
+    department_name character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    location character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;
+
+CREATE TABLE demo_schema_test.employees (
+    employee_id integer NOT NULL ENCODE az64,
+    full_name character varying(60) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    department_id integer NOT NULL ENCODE az64,
+    hired_on date NOT NULL ENCODE az64,
+    salary numeric(10,2) NOT NULL ENCODE az64
+)
+DISTSTYLE AUTO;">Copy schema</button></header>
+  <div class="obj"><div class="oh"><span class="nm">CREATE SCHEMA IF NOT EXISTS demo_schema_test;</span>
+  <button class="cp" data-copy="CREATE SCHEMA IF NOT EXISTS demo_schema_test;">Copy</button></div></div>  <article class="obj" id="o-demo_schema_test.departments" data-k="TABLE" data-s="demo_schema_test.departments">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">demo_schema_test.departments</span><span class="meta">3 cols</span><span class="fts"><span class="ft">ENCODE</span></span>
+      <button class="cp" data-copy="CREATE TABLE demo_schema_test.departments (
+    department_id integer NOT NULL ENCODE az64,
+    department_name character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    location character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;">Copy</button></div>
+    <pre><code>CREATE TABLE demo_schema_test.departments (
+    department_id integer NOT NULL ENCODE az64,
+    department_name character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    location character varying(40) NOT NULL ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE AUTO;</code></pre>
+  </article>  <article class="obj" id="o-demo_schema_test.employees" data-k="TABLE" data-s="demo_schema_test.employees">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">demo_schema_test.employees</span><span class="meta">5 cols</span><span class="fts"><span class="ft">ENCODE</span></span>
+      <button class="cp" data-copy="CREATE TABLE demo_schema_test.employees (
+    employee_id integer NOT NULL ENCODE az64,
+    full_name character varying(60) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    department_id integer NOT NULL ENCODE az64,
+    hired_on date NOT NULL ENCODE az64,
+    salary numeric(10,2) NOT NULL ENCODE az64
+)
+DISTSTYLE AUTO;">Copy</button></div>
+    <pre><code>CREATE TABLE demo_schema_test.employees (
+    employee_id integer NOT NULL ENCODE az64,
+    full_name character varying(60) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    department_id integer NOT NULL ENCODE az64,
+    hired_on date NOT NULL ENCODE az64,
+    salary numeric(10,2) NOT NULL ENCODE az64
+)
+DISTSTYLE AUTO;</code></pre>
+  </article></section><section class="schema" id="s-public">
+  <header class="sh"><div><h2>public</h2><p>AWS TICKIT sample dataset</p>
+  <p class="cnt">7 tables · 0 functions · 0 procedures</p></div>
+  <button class="cp big" data-copy="CREATE SCHEMA IF NOT EXISTS public;
+
+CREATE TABLE public.category (
+    catid smallint NOT NULL ENCODE raw distkey,
+    catgroup character varying(10) ENCODE lzo COLLATE case_sensitive,
+    catname character varying(10) ENCODE lzo COLLATE case_sensitive,
+    catdesc character varying(50) ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE KEY
+SORTKEY ( catid );
+
+CREATE TABLE public.date (
+    dateid smallint NOT NULL ENCODE raw distkey,
+    caldate date NOT NULL ENCODE az64,
+    day character(3) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    week smallint NOT NULL ENCODE az64,
+    month character(5) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    qtr character(5) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    year smallint NOT NULL ENCODE az64,
+    holiday boolean DEFAULT false ENCODE raw
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );
+
+CREATE TABLE public.event (
+    eventid integer NOT NULL ENCODE az64 distkey,
+    venueid smallint NOT NULL ENCODE az64,
+    catid smallint NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    eventname character varying(200) ENCODE lzo COLLATE case_sensitive,
+    starttime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );
+
+CREATE TABLE public.listing (
+    listid integer NOT NULL ENCODE az64 distkey,
+    sellerid integer NOT NULL ENCODE az64,
+    eventid integer NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    numtickets smallint NOT NULL ENCODE az64,
+    priceperticket numeric(8,2) ENCODE az64,
+    totalprice numeric(8,2) ENCODE az64,
+    listtime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );
+
+CREATE TABLE public.sales (
+    salesid integer NOT NULL ENCODE az64,
+    listid integer NOT NULL ENCODE az64 distkey,
+    sellerid integer NOT NULL ENCODE az64,
+    buyerid integer NOT NULL ENCODE az64,
+    eventid integer NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    qtysold smallint NOT NULL ENCODE az64,
+    pricepaid numeric(8,2) ENCODE az64,
+    commission numeric(8,2) ENCODE az64,
+    saletime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );
+
+CREATE TABLE public.users (
+    userid integer NOT NULL ENCODE raw distkey,
+    username character(8) ENCODE lzo COLLATE case_sensitive,
+    firstname character varying(30) ENCODE lzo COLLATE case_sensitive,
+    lastname character varying(30) ENCODE lzo COLLATE case_sensitive,
+    city character varying(30) ENCODE lzo COLLATE case_sensitive,
+    state character(2) ENCODE lzo COLLATE case_sensitive,
+    email character varying(100) ENCODE lzo COLLATE case_sensitive,
+    phone character(14) ENCODE lzo COLLATE case_sensitive,
+    likesports boolean ENCODE raw,
+    liketheatre boolean ENCODE raw,
+    likeconcerts boolean ENCODE raw,
+    likejazz boolean ENCODE raw,
+    likeclassical boolean ENCODE raw,
+    likeopera boolean ENCODE raw,
+    likerock boolean ENCODE raw,
+    likevegas boolean ENCODE raw,
+    likebroadway boolean ENCODE raw,
+    likemusicals boolean ENCODE raw
+)
+DISTSTYLE KEY
+SORTKEY ( userid );
+
+CREATE TABLE public.venue (
+    venueid smallint NOT NULL ENCODE raw distkey,
+    venuename character varying(100) ENCODE lzo COLLATE case_sensitive,
+    venuecity character varying(30) ENCODE lzo COLLATE case_sensitive,
+    venuestate character(2) ENCODE lzo COLLATE case_sensitive,
+    venueseats integer ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( venueid );">Copy schema</button></header>
+  <div class="obj"><div class="oh"><span class="nm">CREATE SCHEMA IF NOT EXISTS public;</span>
+  <button class="cp" data-copy="CREATE SCHEMA IF NOT EXISTS public;">Copy</button></div></div>  <article class="obj" id="o-public.category" data-k="TABLE" data-s="public.category">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">public.category</span><span class="meta">4 cols</span><span class="fts"><span class="ft">ENCODE</span><span class="ft">DISTKEY</span><span class="ft">SORTKEY</span></span>
+      <button class="cp" data-copy="CREATE TABLE public.category (
+    catid smallint NOT NULL ENCODE raw distkey,
+    catgroup character varying(10) ENCODE lzo COLLATE case_sensitive,
+    catname character varying(10) ENCODE lzo COLLATE case_sensitive,
+    catdesc character varying(50) ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE KEY
+SORTKEY ( catid );">Copy</button></div>
+    <pre><code>CREATE TABLE public.category (
+    catid smallint NOT NULL ENCODE raw distkey,
+    catgroup character varying(10) ENCODE lzo COLLATE case_sensitive,
+    catname character varying(10) ENCODE lzo COLLATE case_sensitive,
+    catdesc character varying(50) ENCODE lzo COLLATE case_sensitive
+)
+DISTSTYLE KEY
+SORTKEY ( catid );</code></pre>
+  </article>  <article class="obj" id="o-public.date" data-k="TABLE" data-s="public.date">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">public.date</span><span class="meta">8 cols</span><span class="fts"><span class="ft">ENCODE</span><span class="ft">DISTKEY</span><span class="ft">SORTKEY</span></span>
+      <button class="cp" data-copy="CREATE TABLE public.date (
+    dateid smallint NOT NULL ENCODE raw distkey,
+    caldate date NOT NULL ENCODE az64,
+    day character(3) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    week smallint NOT NULL ENCODE az64,
+    month character(5) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    qtr character(5) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    year smallint NOT NULL ENCODE az64,
+    holiday boolean DEFAULT false ENCODE raw
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );">Copy</button></div>
+    <pre><code>CREATE TABLE public.date (
+    dateid smallint NOT NULL ENCODE raw distkey,
+    caldate date NOT NULL ENCODE az64,
+    day character(3) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    week smallint NOT NULL ENCODE az64,
+    month character(5) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    qtr character(5) NOT NULL ENCODE lzo COLLATE case_sensitive,
+    year smallint NOT NULL ENCODE az64,
+    holiday boolean DEFAULT false ENCODE raw
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );</code></pre>
+  </article>  <article class="obj" id="o-public.event" data-k="TABLE" data-s="public.event">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">public.event</span><span class="meta">6 cols</span><span class="fts"><span class="ft">ENCODE</span><span class="ft">DISTKEY</span><span class="ft">SORTKEY</span></span>
+      <button class="cp" data-copy="CREATE TABLE public.event (
+    eventid integer NOT NULL ENCODE az64 distkey,
+    venueid smallint NOT NULL ENCODE az64,
+    catid smallint NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    eventname character varying(200) ENCODE lzo COLLATE case_sensitive,
+    starttime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );">Copy</button></div>
+    <pre><code>CREATE TABLE public.event (
+    eventid integer NOT NULL ENCODE az64 distkey,
+    venueid smallint NOT NULL ENCODE az64,
+    catid smallint NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    eventname character varying(200) ENCODE lzo COLLATE case_sensitive,
+    starttime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );</code></pre>
+  </article>  <article class="obj" id="o-public.listing" data-k="TABLE" data-s="public.listing">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">public.listing</span><span class="meta">8 cols</span><span class="fts"><span class="ft">ENCODE</span><span class="ft">DISTKEY</span><span class="ft">SORTKEY</span></span>
+      <button class="cp" data-copy="CREATE TABLE public.listing (
+    listid integer NOT NULL ENCODE az64 distkey,
+    sellerid integer NOT NULL ENCODE az64,
+    eventid integer NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    numtickets smallint NOT NULL ENCODE az64,
+    priceperticket numeric(8,2) ENCODE az64,
+    totalprice numeric(8,2) ENCODE az64,
+    listtime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );">Copy</button></div>
+    <pre><code>CREATE TABLE public.listing (
+    listid integer NOT NULL ENCODE az64 distkey,
+    sellerid integer NOT NULL ENCODE az64,
+    eventid integer NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    numtickets smallint NOT NULL ENCODE az64,
+    priceperticket numeric(8,2) ENCODE az64,
+    totalprice numeric(8,2) ENCODE az64,
+    listtime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );</code></pre>
+  </article>  <article class="obj" id="o-public.sales" data-k="TABLE" data-s="public.sales">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">public.sales</span><span class="meta">10 cols</span><span class="fts"><span class="ft">ENCODE</span><span class="ft">DISTKEY</span><span class="ft">SORTKEY</span></span>
+      <button class="cp" data-copy="CREATE TABLE public.sales (
+    salesid integer NOT NULL ENCODE az64,
+    listid integer NOT NULL ENCODE az64 distkey,
+    sellerid integer NOT NULL ENCODE az64,
+    buyerid integer NOT NULL ENCODE az64,
+    eventid integer NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    qtysold smallint NOT NULL ENCODE az64,
+    pricepaid numeric(8,2) ENCODE az64,
+    commission numeric(8,2) ENCODE az64,
+    saletime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );">Copy</button></div>
+    <pre><code>CREATE TABLE public.sales (
+    salesid integer NOT NULL ENCODE az64,
+    listid integer NOT NULL ENCODE az64 distkey,
+    sellerid integer NOT NULL ENCODE az64,
+    buyerid integer NOT NULL ENCODE az64,
+    eventid integer NOT NULL ENCODE az64,
+    dateid smallint NOT NULL ENCODE raw,
+    qtysold smallint NOT NULL ENCODE az64,
+    pricepaid numeric(8,2) ENCODE az64,
+    commission numeric(8,2) ENCODE az64,
+    saletime timestamp without time zone ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( dateid );</code></pre>
+  </article>  <article class="obj" id="o-public.users" data-k="TABLE" data-s="public.users">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">public.users</span><span class="meta">18 cols</span><span class="fts"><span class="ft">ENCODE</span><span class="ft">DISTKEY</span><span class="ft">SORTKEY</span></span>
+      <button class="cp" data-copy="CREATE TABLE public.users (
+    userid integer NOT NULL ENCODE raw distkey,
+    username character(8) ENCODE lzo COLLATE case_sensitive,
+    firstname character varying(30) ENCODE lzo COLLATE case_sensitive,
+    lastname character varying(30) ENCODE lzo COLLATE case_sensitive,
+    city character varying(30) ENCODE lzo COLLATE case_sensitive,
+    state character(2) ENCODE lzo COLLATE case_sensitive,
+    email character varying(100) ENCODE lzo COLLATE case_sensitive,
+    phone character(14) ENCODE lzo COLLATE case_sensitive,
+    likesports boolean ENCODE raw,
+    liketheatre boolean ENCODE raw,
+    likeconcerts boolean ENCODE raw,
+    likejazz boolean ENCODE raw,
+    likeclassical boolean ENCODE raw,
+    likeopera boolean ENCODE raw,
+    likerock boolean ENCODE raw,
+    likevegas boolean ENCODE raw,
+    likebroadway boolean ENCODE raw,
+    likemusicals boolean ENCODE raw
+)
+DISTSTYLE KEY
+SORTKEY ( userid );">Copy</button></div>
+    <pre><code>CREATE TABLE public.users (
+    userid integer NOT NULL ENCODE raw distkey,
+    username character(8) ENCODE lzo COLLATE case_sensitive,
+    firstname character varying(30) ENCODE lzo COLLATE case_sensitive,
+    lastname character varying(30) ENCODE lzo COLLATE case_sensitive,
+    city character varying(30) ENCODE lzo COLLATE case_sensitive,
+    state character(2) ENCODE lzo COLLATE case_sensitive,
+    email character varying(100) ENCODE lzo COLLATE case_sensitive,
+    phone character(14) ENCODE lzo COLLATE case_sensitive,
+    likesports boolean ENCODE raw,
+    liketheatre boolean ENCODE raw,
+    likeconcerts boolean ENCODE raw,
+    likejazz boolean ENCODE raw,
+    likeclassical boolean ENCODE raw,
+    likeopera boolean ENCODE raw,
+    likerock boolean ENCODE raw,
+    likevegas boolean ENCODE raw,
+    likebroadway boolean ENCODE raw,
+    likemusicals boolean ENCODE raw
+)
+DISTSTYLE KEY
+SORTKEY ( userid );</code></pre>
+  </article>  <article class="obj" id="o-public.venue" data-k="TABLE" data-s="public.venue">
+    <div class="oh"><i class="k t"></i><span class="kd">TABLE</span>
+      <span class="nm">public.venue</span><span class="meta">5 cols</span><span class="fts"><span class="ft">ENCODE</span><span class="ft">DISTKEY</span><span class="ft">SORTKEY</span></span>
+      <button class="cp" data-copy="CREATE TABLE public.venue (
+    venueid smallint NOT NULL ENCODE raw distkey,
+    venuename character varying(100) ENCODE lzo COLLATE case_sensitive,
+    venuecity character varying(30) ENCODE lzo COLLATE case_sensitive,
+    venuestate character(2) ENCODE lzo COLLATE case_sensitive,
+    venueseats integer ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( venueid );">Copy</button></div>
+    <pre><code>CREATE TABLE public.venue (
+    venueid smallint NOT NULL ENCODE raw distkey,
+    venuename character varying(100) ENCODE lzo COLLATE case_sensitive,
+    venuecity character varying(30) ENCODE lzo COLLATE case_sensitive,
+    venuestate character(2) ENCODE lzo COLLATE case_sensitive,
+    venueseats integer ENCODE az64
+)
+DISTSTYLE KEY
+SORTKEY ( venueid );</code></pre>
+  </article></section>
+<p class="empty" id="empty">No objects match.</p>
+</main></div>
+<script>
+async function copyText(t,b){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(_){}a.remove()}
+ const o=b.textContent;b.textContent='Copied';b.classList.add('ok');setTimeout(()=>{b.textContent=o;b.classList.remove('ok')},1300)}
+document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copyText(b.dataset.copy,b));
+const q=document.getElementById('q'),chips=[...document.querySelectorAll('.chip')];
+function apply(){const t=q.value.trim().toLowerCase(),on=chips.filter(c=>c.getAttribute('aria-pressed')==='true').map(c=>c.dataset.f);let n=0;
+ document.querySelectorAll('article.obj').forEach(a=>{const show=(!t||a.dataset.s.includes(t))&&(!on.length||on.includes(a.dataset.k));a.classList.toggle('hid',!show);if(show)n++;
+  const l=document.querySelector('nav a[href="#'+CSS.escape(a.id)+'"]');if(l)l.classList.toggle('hid',!show)});
+ document.getElementById('empty').style.display=n?'none':'block'}
+q.oninput=apply;chips.forEach(c=>c.onclick=()=>{c.setAttribute('aria-pressed',c.getAttribute('aria-pressed')==='true'?'false':'true');apply()});
+const r=document.documentElement;document.getElementById('th').onclick=()=>{const d=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark';try{localStorage.setItem('ddl.theme',r.dataset.theme)}catch(e){}};
+try{const t=localStorage.getItem('ddl.theme');if(t)r.dataset.theme=t}catch(e){}
+</script></body></html>
